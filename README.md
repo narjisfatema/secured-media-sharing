@@ -1,50 +1,61 @@
-# Welcome to your Expo app 👋
+<!-----I want to build a react native app for secure multimedia creation and sharing. So there is initially logo screen, authentication screen (social emails as well as connect with wallet option, signup/creation or login if already registered in app using bsv/auth-express-middleware), then dashboard showing menu options like [camera which you can use to capture image or videos , the media after capture should be securedly uploaded to blockchain (media or metadata) and should have shareable link,there should be watermark generated (draggable watermark using react-native-gesture-handler so that even if someone takes a pic from another mobile as its non screenshot-able for other users, so the watermark wont be movable, it will be static)], gallery where previous media files are stored. I want the multimedia to be non-screenshot-able to whomsoever the media is shared and the media should be openable in app only and other than the Creator who created the media, the media should be non screenshot-able in app for other users to whom the media is shared, the metadata in the watermark should be traceable and verifiable. Using bsv blockchain tools like WhatsOnChain – blockchain transactions explorer
+bsv desktop wallet which has  my identity key, wab server url (workshop practicals), https://github.com/bsv-blockchain/lars (LARS Local Automated Runtime System) (Command line interface) – test locally
+https://github.com/bsv-blockchain/cars-cli (CARS Cloud Automated Runtime System) – deploy to production
+ Both LARS and CARS use deployment-info.json to manage services​
+bsv/sdk – npm library/package , core sdk of bsv blockchain
+bsv/auth-express-middleware : npm library/package , protect API with auth (backend)
+bsv/payment-express-middleware : npm library/package , monetize API (backend)
+bsv/ofetch - npm library/package ,  (frontend)
+MongoDB – store user data, public data
+and react native dependencies like
+    "@bsv/auth-express-middleware": "^1.2.3",
+    "@bsv/cars-cli": "^1.2.9",
+    "@bsv/lars": "^1.5.8",
+    "@bsv/payment-express-middleware": "^1.2.3",
+    "@bsv/sdk": "^1.9.11",
+    "@expo/vector-icons": "^15.0.3",
+    "@react-navigation/bottom-tabs": "^7.4.0",
+    "@react-navigation/elements": "^2.6.3",
+    "@react-navigation/native": "^7.1.8",
+    "bsv-wallet": "^2.4.3",
+    "buffer": "^6.0.3",
+    "crypto-js": "^4.2.0",
+    "date-fns": "^4.1.0",
+    "expo": "~54.0.25",
+    "expo-camera": "^17.0.9",
+    "expo-constants": "~18.0.10",
+    "expo-crypto": "^15.0.7",
+    "expo-file-system": "^19.0.19",
+    "expo-font": "~14.0.9",
+    "expo-haptics": "~15.0.7",
+    "expo-image": "~3.0.10",
+    "expo-image-manipulator": "^14.0.7",
+    "expo-image-picker": "^17.0.8",
+    "expo-linking": "~8.0.9",
+    "expo-location": "^19.0.7",
+    "expo-media-library": "^18.2.0",
+    "expo-router": "~6.0.15",
+    "expo-secure-store": "^15.0.7",
+    "expo-sharing": "^14.0.7",
+    "expo-splash-screen": "~31.0.11",
+    "expo-status-bar": "~3.0.8",
+    "expo-symbols": "~1.0.7",
+    "expo-system-ui": "~6.0.8",
+    "expo-web-browser": "~15.0.9",
+    "lodash": "^4.17.21",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-async-storage": "^0.0.1",
+    "react-native-gesture-handler": "~2.28.0",
+    "react-native-randombytes": "^3.6.2",
+    "react-native-reanimated": "~4.1.1",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.16.0",
+    "react-native-screenshot-prevent": "^1.2.1",
+    "react-native-web": "~0.21.0",
+    "react-native-worklets": "0.5.1",
+    "stream-browserify": "^3.0.0",
+    "uuid": "^13.0.0"
+  },----------->
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
-
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
