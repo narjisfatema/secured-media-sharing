@@ -15,10 +15,12 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { saveToBlockchain } from '@/services/blockchain';
 import { saveToGallery } from '@/services/gallery';
+import { useScreenshotProtection } from '@/hooks/screenshotprotection';
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 export default function WatermarkEditorScreen() {
+  const isProtected = useScreenshotProtection(); 
   const params = useLocalSearchParams();
   const router = useRouter();
   const imageUrl = params.imageUri as string;
@@ -368,3 +370,4 @@ const styles = StyleSheet.create({
     marginTop: 50,
   },
 });
+
