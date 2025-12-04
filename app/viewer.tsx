@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { getStoredImages } from '@/services//gallery';
+import { getStoredImages } from '@/services/gallery';
 import { verifyOnBlockchain } from '@/services/blockchain';
 
 interface StoredImage {
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: '#000000',
     borderRadius: 20,
     padding: 6,
   },

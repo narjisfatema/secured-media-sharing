@@ -1,11 +1,13 @@
 // ============================================
 // app/(tabs)/camera.tsx
-// Complete camera screen with capture functionality
+// FIXED: Camera now unmounts & webcam light turns off
 // ============================================
+
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { useState, useRef } from 'react';
 import { Button, StyleSheet, Text, TouchableOpacity, View, Alert } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useIsFocused, useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 
 export default function CameraScreen() {
@@ -13,9 +15,22 @@ export default function CameraScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const router = useRouter();
+  const isFocused = useIsFocused();  // ⭐ Only mount camera when screen is focused
+
+  // ⭐ Stop camera when screen is unfocused (turns webcam light OFF)
+  useFocusEffect(() => {
+    return () => {
+      if (cameraRef.current) {
+        try {
+          cameraRef.current.pausePreview?.();
+        } catch (err) {
+          console.log("Camera stop error:", err);
+        }
+      }
+    };
+  });
 
   if (!permission) {
-    // Camera permissions are still loading
     return (
       <View style={styles.container}>
         <Text style={styles.message}>Loading camera...</Text>
@@ -24,7 +39,6 @@ export default function CameraScreen() {
   }
 
   if (!permission.granted) {
-    // Camera permissions are not granted yet
     return (
       <View style={styles.container}>
         <Text style={styles.message}>We need your permission to show the camera</Text>
@@ -44,10 +58,11 @@ export default function CameraScreen() {
           quality: 1,
           base64: false,
         });
-        
+
         if (photo) {
           console.log('Photo captured:', photo.uri);
-          // Navigate to watermark editor with the captured image
+
+          // navigate to watermark screen
           router.push({
             pathname: '/watermarkeditor',
             params: { imageUri: photo.uri }
@@ -62,32 +77,32 @@ export default function CameraScreen() {
 
   return (
     <View style={styles.container}>
-      <CameraView 
-        style={styles.camera} 
-        facing={facing}
-        ref={cameraRef}
-      >
-        <View style={styles.buttonContainer}>
-          {/* Flip Camera Button - Left Side */}
-          <TouchableOpacity 
-            style={styles.flipButton} 
-            onPress={toggleCameraFacing}
-          >
-            <MaterialIcons name="flip-camera-ios" size={32} color="white" />
-          </TouchableOpacity>
+      {/* ⭐ Only render CameraView if screen is focused */}
+      {isFocused && (
+        <CameraView
+          style={styles.camera}
+          facing={facing}
+          ref={cameraRef}
+        >
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={styles.flipButton}
+              onPress={toggleCameraFacing}
+            >
+              <MaterialIcons name="flip-camera-ios" size={32} color="white" />
+            </TouchableOpacity>
 
-          {/* Capture Button - Center */}
-          <TouchableOpacity 
-            style={styles.captureButton} 
-            onPress={takePicture}
-          >
-            <View style={styles.captureButtonInner} />
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.captureButton}
+              onPress={takePicture}
+            >
+              <View style={styles.captureButtonInner} />
+            </TouchableOpacity>
 
-          {/* Placeholder - Right Side (for balance) */}
-          <View style={styles.placeholder} />
-        </View>
-      </CameraView>
+            <View style={styles.placeholder} />
+          </View>
+        </CameraView>
+      )}
     </View>
   );
 }
@@ -145,3 +160,9 @@ const styles = StyleSheet.create({
     width: 60,
   },
 });
+
+//the logic of above code is that it creates a camera screen using Expo's CameraView component. It handles camera permissions, allows toggling between front and back cameras, and captures photos. The camera is only active when the screen is focused, ensuring the webcam light turns off when navigating away. Captured photos are passed to a watermark editor screen for further processing.
+// The useFocusEffect hook from @react-navigation/native is used to manage the camera's lifecycle based on screen focus.
+// The useIsFocused hook is used to conditionally render the CameraView component only when the screen is focused.
+// The cameraRef is used to access the CameraView methods for taking pictures and pausing the preview.
+// The styles object defines the styling for various components in the camera screen.

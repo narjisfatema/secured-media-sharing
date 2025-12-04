@@ -5,86 +5,61 @@ import { ThemedText } from '@/components/themed-text';
 import { Fonts } from '@/constants/theme';
 import { useState } from 'react';
 
-
 export default function AuthScreen() {
     const router = useRouter();
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-
-
+    
+    // ✅ ADD THIS FUNCTION
     const handleLogin = () => {
-        // Add your authentication logic here
-        console.log('Login attempt:', { email, password });
-        router.push('/homescreen'); // Redirect to home screen after login
+        router.push('/dashboard'); // Redirect to home screen after login
     };
-
 
     return (
         <ThemedView style={styles.container}>
             <ThemedText type="title" style={styles.title}>
                 SOCIAL LOGIN
             </ThemedText>
-           
-            <TextInput
-                style={styles.input}
-                placeholder="Email"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-            />
-           
-            <TextInput
-                style={styles.input}
-                placeholder="Password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-            />
+            <ThemedText>
+                Login to securely capture, store, and share your media with blockchain verification.
+            </ThemedText>
            
             <TouchableOpacity style={styles.button} onPress={handleLogin}>
-                <Text style={styles.buttonText}>Sign In</Text>
+                <Text style={styles.buttonText}>Connect with BSV Wallet</Text>
             </TouchableOpacity>
-           
+
             <TouchableOpacity onPress={() => router.back()}>
                 <ThemedText style={styles.backLink}>
-                    Back to Home
+                    Don't have a wallet? Download SPV wallet here.
                 </ThemedText>
             </TouchableOpacity>
         </ThemedView>
     );
 }
 
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        alignItems: 'center',
         justifyContent: 'center',
         padding: 10,
-        width: '50%',
+        width: '100%',
     },
     title: {
         fontFamily: Fonts.rounded,
-        textAlign: 'center',
         marginBottom: 30,
-    },
-    input: {
-        backgroundColor: '#fff',
-        padding: 10,
-        borderRadius: 8,
-        marginBottom: 15,
-        borderWidth: 1,
-        borderColor: '#ddd',
+        textAlign: 'center',
+        alignSelf: 'center',
     },
     button: {
-        backgroundColor: '#1E90FF',
+        backgroundColor: "green",
         padding: 10,
         borderRadius: 8,
         alignItems: 'center',
         marginTop: 10,
+        width: '50%',
+        alignSelf: 'center',
     },
     buttonText: {
-        color: '#fff',
+        color: 'white',
         fontSize: 16,
         fontWeight: 'bold',
     },
@@ -95,3 +70,7 @@ const styles = StyleSheet.create({
     },
 });
 
+//the logic of above code is to create an authentication screen for a mobile app using React Native and Expo Router.
+// It includes a title, description, and a button to connect with a BSV wallet for secure media handling.
+// The handleLogin function redirects users to the dashboard screen upon successful login.
+// The styles object defines the styling for various components in the authentication screen.

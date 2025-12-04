@@ -51,3 +51,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
 });
+
+//the logic of above code is to create a gallery screen within a parallax scroll view. 
+// It displays a header image and a title "Gallery" using themed components for consistent styling. The screen informs users that it contains the media they have created. The styles object defines the styling for the header image and title container, ensuring proper layout and appearance across different platforms.
+// The ParallaxScrollView component provides a scrollable view with a parallax effect for the header.
+// The ThemedView and ThemedText components are used for consistent theming across the app.
+// The IconSymbol component is used to render the header image icon.
