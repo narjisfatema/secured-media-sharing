@@ -1,11 +1,15 @@
-// ============================================
 // app/(tabs)/camera.tsx
-// FIXED: Camera now unmounts & webcam light turns off
-// ============================================
-
+import React, { useState, useRef, useCallback } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  Platform,
+  Image,
+} from 'react-native';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
-import { useState, useRef } from 'react';
-import { Button, StyleSheet, Text, TouchableOpacity, View, Alert } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useIsFocused, useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -15,93 +19,144 @@ export default function CameraScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const router = useRouter();
-  const isFocused = useIsFocused();  // ⭐ Only mount camera when screen is focused
+  const isFocused = useIsFocused();
 
-  // ⭐ Stop camera when screen is unfocused (turns webcam light OFF)
-  useFocusEffect(() => {
-    return () => {
-      if (cameraRef.current) {
-        try {
-          cameraRef.current.pausePreview?.();
-        } catch (err) {
-          console.log("Camera stop error:", err);
+  // preview state
+  const [previewUri, setPreviewUri] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+
+  // Pause camera when screen loses focus
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        if (cameraRef.current) {
+          try {
+            cameraRef.current.pausePreview?.();
+          } catch (err) {
+            console.log('Camera stop error:', err);
+          }
         }
-      }
-    };
-  });
+      };
+    }, [])
+  );
 
   if (!permission) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.message}>Loading camera...</Text>
+      <View style={styles.center}>
+        <Text style={styles.message}>Loading camera…</Text>
       </View>
     );
   }
 
   if (!permission.granted) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.message}>We need your permission to show the camera</Text>
-        <Button onPress={requestPermission} title="Grant Permission" />
+      <View style={styles.center}>
+        <Text style={styles.message}>We need your permission to use the camera</Text>
+        <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
+          <Text style={styles.permissionButtonText}>Grant permission</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
-  function toggleCameraFacing() {
-    setFacing(current => (current === 'back' ? 'front' : 'back'));
-  }
+  const toggleCameraFacing = () => {
+    setFacing((current) => (current === 'back' ? 'front' : 'back'));
+  };
 
-  async function takePicture() {
-    if (cameraRef.current) {
-      try {
-        const photo = await cameraRef.current.takePictureAsync({
-          quality: 1,
-          base64: false,
-        });
+  const takePicture = async () => {
+    if (!cameraRef.current) return;
 
-        if (photo) {
-          console.log('Photo captured:', photo.uri);
+    try {
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 0.8,
+        base64: false,
+      });
 
-          // navigate to watermark screen
-          router.push({
-            pathname: '/watermarkeditor',
-            params: { imageUri: photo.uri }
-          });
-        }
-      } catch (error) {
-        console.error('Error taking picture:', error);
-        Alert.alert('Error', 'Failed to capture image. Please try again.');
+      if (photo?.uri) {
+        setPreviewUri(photo.uri);
+        setShowPreview(true);
+      } else {
+        Alert.alert('Error', 'No image captured');
       }
+    } catch (error) {
+      console.error('Error taking picture:', error);
+      Alert.alert('Error', 'Failed to capture image. Please try again.');
     }
-  }
+  };
+
+  const handleRetake = () => {
+    setPreviewUri(null);
+    setShowPreview(false);
+  };
+
+  const handleConfirm = () => {
+    if (!previewUri) return;
+
+    const imageKey = `image_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+    router.push({
+      pathname: '/watermarkeditor',
+      params: {
+        imageUri: previewUri,
+        imageKey,
+        captureTimestamp: new Date().toISOString(),
+      },
+    });
+
+    setShowPreview(false);
+  };
 
   return (
     <View style={styles.container}>
-      {/* ⭐ Only render CameraView if screen is focused */}
-      {isFocused && (
+      {/* Camera live view (when not previewing) */}
+      {isFocused && !showPreview && (
         <CameraView
           style={styles.camera}
           facing={facing}
           ref={cameraRef}
-        >
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={styles.flipButton}
-              onPress={toggleCameraFacing}
-            >
-              <MaterialIcons name="flip-camera-ios" size={32} color="white" />
+        />
+      )}
+
+      {/* Preview overlay (after capture) */}
+      {showPreview && previewUri && (
+        <View style={styles.previewOverlay}>
+          <Image source={{ uri: previewUri }} style={styles.previewImage} />
+          <View style={styles.previewButtons}>
+            <TouchableOpacity style={styles.retakeButton} onPress={handleRetake}>
+              <MaterialIcons name="refresh" size={24} color="#ef4444" />
+              <Text style={styles.retakeText}>Retake</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.captureButton}
-              onPress={takePicture}
-            >
-              <View style={styles.captureButtonInner} />
+            <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
+              <MaterialIcons name="check" size={24} color="#ffffff" />
+              <Text style={styles.confirmText}>OK</Text>
             </TouchableOpacity>
-
-            <View style={styles.placeholder} />
           </View>
-        </CameraView>
+        </View>
+      )}
+
+      {/* Bottom controls (only in live camera mode) */}
+      {!showPreview && (
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.flipButton} onPress={toggleCameraFacing}>
+            <MaterialIcons name="flip-camera-ios" size={32} color="white" />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
+            <View style={styles.captureButtonInner} />
+          </TouchableOpacity>
+
+          <View style={styles.placeholder} />
+        </View>
+      )}
+
+      {/* Optional: simple info for web if camera has issues */}
+      {Platform.OS === 'web' && !showPreview && (
+        <View style={styles.webBanner}>
+          <Text style={styles.webBannerText}>
+            If camera preview is blank in the browser, test on a physical device using Expo Go.
+          </Text>
+        </View>
       )}
     </View>
   );
@@ -109,6 +164,10 @@ export default function CameraScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  center: {
     flex: 1,
     justifyContent: 'center',
     backgroundColor: '#000',
@@ -120,11 +179,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     paddingHorizontal: 20,
   },
+  permissionButton: {
+    marginTop: 16,
+    backgroundColor: '#3b82f6',
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignSelf: 'center',
+  },
+  permissionButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
+  },
   camera: {
     flex: 1,
   },
   buttonContainer: {
-    flex: 1,
     flexDirection: 'row',
     backgroundColor: 'transparent',
     alignItems: 'flex-end',
@@ -159,10 +230,62 @@ const styles = StyleSheet.create({
   placeholder: {
     width: 60,
   },
+  previewOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#000',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingBottom: 40,
+  },
+  previewImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 140,
+    resizeMode: 'contain',
+  },
+  previewButtons: {
+    flexDirection: 'row',
+    gap: 24,
+  },
+  retakeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 24,
+    backgroundColor: 'rgba(239,68,68,0.85)',
+  },
+  confirmButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 24,
+    backgroundColor: '#10b981',
+  },
+  retakeText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  confirmText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  webBanner: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 8,
+    backgroundColor: 'rgba(15,23,42,0.9)',
+  },
+  webBannerText: {
+    color: '#9ca3af',
+    fontSize: 11,
+    textAlign: 'center',
+  },
 });
-
-//the logic of above code is that it creates a camera screen using Expo's CameraView component. It handles camera permissions, allows toggling between front and back cameras, and captures photos. The camera is only active when the screen is focused, ensuring the webcam light turns off when navigating away. Captured photos are passed to a watermark editor screen for further processing.
-// The useFocusEffect hook from @react-navigation/native is used to manage the camera's lifecycle based on screen focus.
-// The useIsFocused hook is used to conditionally render the CameraView component only when the screen is focused.
-// The cameraRef is used to access the CameraView methods for taking pictures and pausing the preview.
-// The styles object defines the styling for various components in the camera screen.
