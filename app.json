@@ -4,7 +4,7 @@
     "slug": "hackathon",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/icon.jpeg",
     "scheme": "hackathon",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -19,6 +19,7 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
+<<<<<<< HEAD
         "foregroundImage": "./assets/images/icon.jpeg"
       },
       "edgeToEdgeEnabled": true,
@@ -46,13 +47,34 @@
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.jpeg"
+=======
+        "foregroundImage": "./assets/images/android-icon-foreground.jpeg",
+        "backgroundImage": "./assets/images/android-icon-background.jpeg",
+        "monochromeImage": "./assets/images/android-icon-monochrome.jpeg"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.hackathon",
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES",
+        "ACCESS_MEDIA_LOCATION"
+      ]
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/icon.jpeg"
+>>>>>>> a26891f (bsv authentication)
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/splash-icon.jpeg",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
@@ -61,6 +83,7 @@
           }
         }
       ],
+<<<<<<< HEAD
       [
         "expo-camera",
         {
@@ -71,6 +94,27 @@
       ],
       "expo-media-library",
       "expo-image-picker"
+=======
+
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone",
+          "recordAudioAndroid": true
+        }
+      ],
+
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos.",
+          "savePhotosPermission": "Allow $(PRODUCT_NAME) to save photos.",
+          "isAccessMediaLocationEnabled": true
+        }
+      ]
+
+>>>>>>> a26891f (bsv authentication)
     ],
     "experiments": {
       "typedRoutes": true,

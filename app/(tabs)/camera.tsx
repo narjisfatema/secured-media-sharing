@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // app/(tabs)/camera.tsx
 import React, { useState, useRef, useCallback } from 'react';
 import {
@@ -46,19 +47,53 @@ export default function CameraScreen() {
         <Text style={styles.message}>Loading camera…</Text>
       </View>
     );
+=======
+import {
+  CameraMode,
+  CameraType,
+  CameraView,
+  useCameraPermissions,
+} from "expo-camera";
+import { useRef, useState } from "react";
+import { Button, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image } from "expo-image";
+import AntDesign from "@expo/vector-icons/AntDesign";
+import Feather from "@expo/vector-icons/Feather";
+import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
+
+export default function App() {
+  const [permission, requestPermission] = useCameraPermissions();
+  const ref = useRef<CameraView>(null);
+  const [uri, setUri] = useState<string | null>(null);
+  const [mode, setMode] = useState<CameraMode>("picture");
+  const [facing, setFacing] = useState<CameraType>("back");
+  const [recording, setRecording] = useState(false);
+
+  if (!permission) {
+    return null;
+>>>>>>> a26891f (bsv authentication)
   }
 
   if (!permission.granted) {
     return (
+<<<<<<< HEAD
       <View style={styles.center}>
         <Text style={styles.message}>We need your permission to use the camera</Text>
         <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
           <Text style={styles.permissionButtonText}>Grant permission</Text>
         </TouchableOpacity>
+=======
+      <View style={styles.container}>
+        <Text style={{ textAlign: "center" }}>
+          We need your permission to use the camera
+        </Text>
+        <Button onPress={requestPermission} title="Grant permission" />
+>>>>>>> a26891f (bsv authentication)
       </View>
     );
   }
 
+<<<<<<< HEAD
   const toggleCameraFacing = () => {
     setFacing((current) => (current === 'back' ? 'front' : 'back'));
   };
@@ -104,10 +139,96 @@ export default function CameraScreen() {
     });
 
     setShowPreview(false);
+=======
+  const takePicture = async () => {
+    const photo = await ref.current?.takePictureAsync();
+    if (photo?.uri) setUri(photo.uri);
+  };
+
+  const recordVideo = async () => {
+    if (recording) {
+      setRecording(false);
+      ref.current?.stopRecording();
+      return;
+    }
+    setRecording(true);
+    const video = await ref.current?.recordAsync();
+    console.log({ video });
+  };
+
+  const toggleMode = () => {
+    setMode((prev) => (prev === "picture" ? "video" : "picture"));
+  };
+
+  const toggleFacing = () => {
+    setFacing((prev) => (prev === "back" ? "front" : "back"));
+  };
+
+  const renderPicture = (uri: string) => {
+    return (
+      <View>
+        <Image
+          source={{ uri }}
+          contentFit="contain"
+          style={{ width: 300, aspectRatio: 1 }}
+        />
+        <Button onPress={() => setUri(null)} title="Take another picture" />
+      </View>
+    );
+  };
+
+  const renderCamera = () => {
+    return (
+      <View style={styles.cameraContainer}>
+        <CameraView
+          style={styles.camera}
+          ref={ref}
+          mode={mode}
+          facing={facing}
+          mute={false}
+          responsiveOrientationWhenOrientationLocked
+        />
+        <View style={styles.shutterContainer}>
+          <Pressable onPress={toggleMode}>
+            {mode === "picture" ? (
+              <AntDesign name="picture" size={32} color="white" />
+            ) : (
+              <Feather name="video" size={32} color="white" />
+            )}
+          </Pressable>
+          <Pressable onPress={mode === "picture" ? takePicture : recordVideo}>
+            {({ pressed }) => (
+              <View
+                style={[
+                  styles.shutterBtn,
+                  {
+                    opacity: pressed ? 0.5 : 1,
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.shutterBtnInner,
+                    {
+                      backgroundColor: mode === "picture" ? "white" : "red",
+                    },
+                  ]}
+                />
+              </View>
+            )}
+          </Pressable>
+          <Pressable onPress={toggleFacing}>
+            <FontAwesome6 name="rotate-left" size={32} color="white" />
+          </Pressable>
+        </View>
+      </View>
+    );
+>>>>>>> a26891f (bsv authentication)
   };
 
   return (
     <View style={styles.container}>
+<<<<<<< HEAD
       {/* Camera live view (when not previewing) */}
       {isFocused && !showPreview && (
         <CameraView
@@ -158,6 +279,9 @@ export default function CameraScreen() {
           </Text>
         </View>
       )}
+=======
+      {uri ? renderPicture(uri) : renderCamera()}
+>>>>>>> a26891f (bsv authentication)
     </View>
   );
 }
@@ -165,6 +289,7 @@ export default function CameraScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+<<<<<<< HEAD
     backgroundColor: '#000',
   },
   center: {
@@ -200,27 +325,40 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
+=======
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cameraContainer: StyleSheet.absoluteFillObject,
+  camera: StyleSheet.absoluteFillObject,
+  shutterContainer: {
+    position: "absolute",
+    bottom: 44,
+    left: 0,
+    width: "100%",
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+>>>>>>> a26891f (bsv authentication)
     paddingHorizontal: 30,
-    paddingBottom: 40,
   },
-  flipButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+  shutterBtn: {
+    backgroundColor: "transparent",
+    borderWidth: 5,
+    borderColor: "white",
+    width: 85,
+    height: 85,
+    borderRadius: 45,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  captureButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 4,
-    borderColor: 'white',
+  shutterBtnInner: {
+    width: 70,
+    height: 70,
+    borderRadius: 50,
   },
+<<<<<<< HEAD
   captureButtonInner: {
     width: 64,
     height: 64,
@@ -289,3 +427,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+=======
+});
+>>>>>>> a26891f (bsv authentication)
