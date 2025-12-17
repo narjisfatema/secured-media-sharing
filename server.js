@@ -8,9 +8,9 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// ============================================================================
+// ======
 // 1. MONGODB CONNECTION
-// ============================================================================
+// ======
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/bsv-auth';
 
 mongoose.connect(MONGODB_URI)
@@ -20,9 +20,9 @@ mongoose.connect(MONGODB_URI)
     console.log('💡 Make sure MongoDB is running: brew services start mongodb-community');
   });
 
-// ============================================================================
+// ======
 // 2. MONGODB USER SCHEMA
-// ============================================================================
+// ======
 const userSchema = new mongoose.Schema({
   identityKey: { 
     type: String, 
@@ -58,9 +58,9 @@ userSchema.methods.updateLastActive = function() {
 
 const User = mongoose.model('User', userSchema);
 
-// ============================================================================
+// ======
 // 3. SERVER WALLET INITIALIZATION (AUTO-GENERATE KEY)
-// ============================================================================
+// ======
 const serverPrivateKey = PrivateKey.fromRandom();
 const wallet = new Wallet(serverPrivateKey);
 
@@ -69,17 +69,17 @@ console.log('Private Key:', serverPrivateKey.toHex());
 console.log('Public Key:', serverPrivateKey.toPublicKey().toString());
 console.log('\n');
 
-// ============================================================================
+// ======
 // 4. BRC-103 AUTH MIDDLEWARE
-// ============================================================================
+// ======
 const authMiddleware = createAuthMiddleware({
   wallet,
   allowUnauthenticated: false
 });
 
-// ============================================================================
+// ======
 // 5. EXPRESS APP SETUP
-// ============================================================================
+// ======
 const app = express();
 
 // Middleware
@@ -93,9 +93,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// ============================================================================
+// ======
 // 6. PUBLIC ROUTES (No authentication required)
-// ============================================================================
+// ======
 
 // Health check
 app.get('/health', (req, res) => {
@@ -181,9 +181,9 @@ app.post('/verify-key', async (req, res) => {
   }
 });
 
-// ============================================================================
+// ======
 // 7. PROTECTED ROUTES (BRC-103 authentication required)
-// ============================================================================
+// ======
 app.use(authMiddleware);
 
 // Middleware to update last active timestamp
@@ -335,9 +335,9 @@ app.get('/stats', async (req, res) => {
   }
 });
 
-// ============================================================================
+// ======
 // 8. START SERVER
-// ============================================================================
+// ======
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

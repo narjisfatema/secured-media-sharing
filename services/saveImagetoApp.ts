@@ -33,9 +33,9 @@ export async function saveImageToAppStorage(sourceUri: string): Promise<{
     console.log('📸 Starting image save process...');
     console.log('📍 Source URI:', sourceUri);
 
-    // =======================================
+    // ====
     // STEP 1: CREATE DIRECTORY IF NEEDED
-    // =======================================
+    // ====
     console.log('📁 Step 1: Checking directory...');
     const dirInfo = await FileSystem.getInfoAsync(APP_GALLERY_DIR);
     
@@ -47,27 +47,27 @@ export async function saveImageToAppStorage(sourceUri: string): Promise<{
       console.log('✅ Directory exists');
     }
 
-    // =======================================
+    // ====
     // STEP 2: GENERATE UNIQUE IMAGE KEY
-    // =======================================
+    // ====
     console.log('🔑 Step 2: Generating image key...');
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 9);
     const imageKey = `img_${timestamp}_${random}`;
     console.log('✅ Image key:', imageKey);
 
-    // =======================================
+    // ====
     // STEP 3: CREATE PERMANENT FILE PATH
-    // =======================================
+    // ====
     console.log('📍 Step 3: Creating file path...');
     const fileExtension = sourceUri.toLowerCase().endsWith('.png') ? 'png' : 'jpg';
     const fileName = `${imageKey}.${fileExtension}`;
     const destinationUri = `${APP_GALLERY_DIR}${fileName}`;
     console.log('✅ Destination:', destinationUri);
 
-    // =======================================
+    // ====
     // STEP 4: VERIFY SOURCE FILE EXISTS
-    // =======================================
+    // ====
     console.log('🔍 Step 4: Verifying source file...');
     const sourceInfo = await FileSystem.getInfoAsync(sourceUri);
     
@@ -77,9 +77,9 @@ export async function saveImageToAppStorage(sourceUri: string): Promise<{
     console.log('✅ Source file exists');
     console.log('📊 Source size:', (sourceInfo.size || 0) / 1024, 'KB');
 
-    // =======================================
+    // ====
     // STEP 5: COPY FILE TO APP STORAGE
-    // =======================================
+    // ====
     console.log('💾 Step 5: Copying file to app storage...');
     
     await FileSystem.copyAsync({
@@ -89,9 +89,9 @@ export async function saveImageToAppStorage(sourceUri: string): Promise<{
     
     console.log('✅ File copied successfully');
 
-    // =======================================
+    // ====
     // STEP 6: VERIFY FILE WAS SAVED
-    // =======================================
+    // ====
     console.log('🔍 Step 6: Verifying saved file...');
     const savedInfo = await FileSystem.getInfoAsync(destinationUri);
     
@@ -101,9 +101,9 @@ export async function saveImageToAppStorage(sourceUri: string): Promise<{
     console.log('✅ File verified at destination');
     console.log('📊 Saved size:', (savedInfo.size || 0) / 1024, 'KB');
 
-    // =======================================
+    // ====
     // STEP 7: GET IMAGE DIMENSIONS (OPTIONAL)
-    // =======================================
+    // ====
     let imageWidth: number | undefined;
     let imageHeight: number | undefined;
 
@@ -115,9 +115,9 @@ export async function saveImageToAppStorage(sourceUri: string): Promise<{
       console.log('⚠️ Could not read dimensions (ok)');
     }
 
-    // =======================================
+    // ====
     // STEP 8: CREATE METADATA
-    // =======================================
+    // ====
     console.log('📝 Step 8: Creating metadata...');
     const metadata: ImageMetadata = {
       id: imageKey,
@@ -132,17 +132,17 @@ export async function saveImageToAppStorage(sourceUri: string): Promise<{
     };
     console.log('✅ Metadata created');
 
-    // =======================================
+    // ====
     // STEP 9: SAVE METADATA TO ASYNCSTORAGE
-    // =======================================
+    // ====
     console.log('💾 Step 9: Saving metadata...');
     const metadataKey = `gallery_${imageKey}`;
     await AsyncStorage.setItem(metadataKey, JSON.stringify(metadata));
     console.log('✅ Metadata saved with key:', metadataKey);
 
-    // =======================================
+    // ====
     // STEP 10: DELETE TEMPORARY SOURCE FILE
-    // =======================================
+    // ====
     console.log('🗑️ Step 10: Cleaning up temp file...');
     try {
       // Only delete if it's in a temp/cache directory
@@ -156,9 +156,9 @@ export async function saveImageToAppStorage(sourceUri: string): Promise<{
       console.log('⚠️ Could not delete temp file (ok)');
     }
 
-    // =======================================
+    // ====
     // STEP 11: VERIFY COMPLETE SAVE
-    // =======================================
+    // ====
     console.log('🔍 Step 11: Final verification...');
     
     // Check file still exists

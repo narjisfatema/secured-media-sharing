@@ -42,9 +42,9 @@ export default function CaptureScreen() {
       setIsCapturing(true);
       console.log('📸 Capturing photo...');
 
-      // =======================================
+      // ====
       // CAPTURE PHOTO (temporary URI)
-      // =======================================
+      // ====
       const photo = await cameraRef.current.takePictureAsync({
         quality: 0.9,
         skipProcessing: false,
@@ -52,9 +52,9 @@ export default function CaptureScreen() {
 
       console.log('✅ Photo captured (temp):', photo.uri);
 
-      // =======================================
+      // ====
       // ✅✅✅ SAVE TO APP STORAGE ✅✅✅
-      // =======================================
+      // ====
       console.log('💾 Saving to app storage...');
       
       const result = await saveImageToAppStorage(photo.uri);
@@ -67,9 +67,9 @@ export default function CaptureScreen() {
       setLastCaptured(result.savedUri);
       setIsCameraMode(false);
 
-      // =======================================
+      // ====
       // SHOW SUCCESS MESSAGE
-      // =======================================
+      // ====
       Alert.alert(
         '✅ Photo Saved!',
         `Your photo is saved in app private storage.\n\nImage Key: ${result.imageKey}`,
@@ -116,9 +116,9 @@ export default function CaptureScreen() {
     setFacing(current => (current === 'back' ? 'front' : 'back'));
   };
 
-  // =======================================
+  // ====
   // CAMERA VIEW
-  // =======================================
+  // ====
   if (isCameraMode) {
     return (
       <View style={styles.cameraContainer}>
@@ -190,9 +190,9 @@ export default function CaptureScreen() {
     );
   }
 
-  // =======================================
+  // ====
   // MAIN SCREEN
-  // =======================================
+  // ====
   return (
     <View style={styles.container}>
       <View style={styles.header}>

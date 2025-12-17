@@ -1,38 +1,3 @@
-<<<<<<< HEAD
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { useRouter } from "expo-router";
-
-export default function Dashboard() {
-  const router = useRouter();
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Dashboard</Text>
-
-      {/* Go to Camera */}
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => router.push("/camera")}
-      >
-        <Text style={styles.buttonText}>Open Camera</Text>
-      </TouchableOpacity>
-
-      {/* Go to Profile */}
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => router.push("/gallery")}
-      >
-        <Text style={styles.buttonText}>Go to Profile</Text>
-      </TouchableOpacity>
-
-      {/* Go to Settings */}
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => router.push("/gallery")}
-      >
-        <Text style={styles.buttonText}>Go to Settings</Text>
-      </TouchableOpacity>
-=======
 import React, { useState, useEffect } from 'react';
 import { 
   View, 
@@ -44,14 +9,15 @@ import {
   ActivityIndicator,
   RefreshControl
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { uploadMedia, getMyMedia, deleteMedia, getProfile } from '../../hooks/authRequest';
+import { useRouter } from 'expo-router';
+import { getMyMedia, deleteMedia, getProfile } from '../../hooks/authRequest';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 
 export default function DashboardScreen() {
+  const router = useRouter();
   const [media, setMedia] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [identityKey, setIdentityKey] = useState('');
   const [profile, setProfile] = useState(null);
@@ -65,18 +31,13 @@ export default function DashboardScreen() {
       const key = await AsyncStorage.getItem("identityKey");
       setIdentityKey(key || '');
       
-      // Load profile
       const profileData = await getProfile();
       setProfile(profileData.user);
       
-      // Load media
       const result = await getMyMedia();
       setMedia(result.media);
       
-      console.log('✅ Loaded dashboard data:', {
-        mediaCount: result.media.length,
-        profile: profileData.user
-      });
+      console.log('✅ Loaded dashboard data');
     } catch (err) {
       console.error('❌ Load data error:', err);
       Alert.alert('Error', 'Failed to load data: ' + err.message);
@@ -91,64 +52,14 @@ export default function DashboardScreen() {
     loadData();
   };
 
-  const handleUpload = async () => {
-    setUploading(true);
-
-    try {
-      // Request permissions
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Needed', 'Please grant photo library access to upload images.');
-        setUploading(false);
-        return;
-      }
-
-      // Pick image
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        quality: 0.8,
-        allowsEditing: true,
-      });
-
-      if (result.canceled) {
-        setUploading(false);
-        return;
-      }
-
-      const asset = result.assets[0];
-      const uri = asset.uri;
-      const fileName = uri.split('/').pop() || `image_${Date.now()}.jpg`;
-      
-      // Create hash (in production, use actual file hashing)
-      const fileHash = `hash_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-      console.log('📤 Uploading:', fileName);
-
-      // Upload to server with BRC-103 auth
-      await uploadMedia(
-        fileHash, 
-        fileName, 
-        uri,
-        asset.mimeType || 'image/jpeg',
-        asset.fileSize || 0
-      );
-
-      Alert.alert('✅ Success', 'Media uploaded successfully!');
-      
-      // Reload media list
-      await loadData();
-    } catch (err) {
-      console.error('❌ Upload error:', err);
-      Alert.alert('Error', 'Upload failed: ' + err.message);
-    } finally {
-      setUploading(false);
-    }
+  const handleGetStarted = () => {
+    router.push('/camera');
   };
 
   const handleDelete = async (mediaId: string, fileName: string) => {
     Alert.alert(
       'Delete Media',
-      `Are you sure you want to delete "${fileName}"?`,
+      `Delete "${fileName}"?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -160,7 +71,7 @@ export default function DashboardScreen() {
               Alert.alert('Success', 'Media deleted');
               await loadData();
             } catch (err) {
-              Alert.alert('Error', 'Delete failed: ' + err.message);
+              Alert.alert('Error', err.message);
             }
           }
         }
@@ -172,54 +83,39 @@ export default function DashboardScreen() {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#f7931a" />
-        <Text style={styles.loadingText}>Loading dashboard...</Text>
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Media</Text>
         {profile && (
-          <Text style={styles.headerSubtitle}>
-            {profile.mediaCount} items
-          </Text>
+          <Text style={styles.headerSubtitle}>{profile.mediaCount} items</Text>
         )}
       </View>
 
-      {/* Identity Key Display */}
       <View style={styles.identityCard}>
-        <Text style={styles.identityLabel}>🔑 Your Identity</Text>
+        <Text style={styles.identityLabel}></Text>
+        <IconSymbol size={32} name="abs.circle.fill" color="#333" />
         <Text style={styles.identityKey}>
           {identityKey.slice(0, 20)}...{identityKey.slice(-12)}
         </Text>
       </View>
 
-      {/* Upload Button */}
       <TouchableOpacity
-        style={[styles.uploadButton, uploading && styles.uploadButtonDisabled]}
-        onPress={handleUpload}
-        disabled={uploading}
+        style={styles.getStartedButton}
+        onPress={handleGetStarted}
       >
-        {uploading ? (
-          <View style={styles.uploadingContainer}>
-            <ActivityIndicator color="white" />
-            <Text style={styles.uploadButtonText}>Uploading...</Text>
-          </View>
-        ) : (
-          <Text style={styles.uploadButtonText}>📸 Upload New Photo</Text>
-        )}
+        <Text style={styles.getStartedButtonText}>📸 Get Started</Text>
       </TouchableOpacity>
 
-      {/* Media List */}
       {media.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>📭 No media yet</Text>
-          <Text style={styles.emptySubtext}>
-            Upload your first photo to get started!
-          </Text>
+          <Text style={styles.emptySubtext}>Take your first photo!</Text>
         </View>
       ) : (
         <FlatList
@@ -239,6 +135,16 @@ export default function DashboardScreen() {
                 <Text style={styles.mediaHash}>
                   Hash: {item.fileHash.slice(0, 20)}...
                 </Text>
+                {item.uhrpUrl && (
+                  <Text style={styles.uhrpUrl}>
+                    UHRP: {item.uhrpUrl.slice(0, 30)}...
+                  </Text>
+                )}
+                {item.timestamp && (
+                  <Text style={styles.timestamp}>
+                    Watermark: {new Date(item.timestamp).toLocaleString()}
+                  </Text>
+                )}
               </View>
               <TouchableOpacity
                 style={styles.deleteButton}
@@ -248,10 +154,8 @@ export default function DashboardScreen() {
               </TouchableOpacity>
             </View>
           )}
-          contentContainerStyle={styles.listContainer}
         />
       )}
->>>>>>> a26891f (bsv authentication)
     </View>
   );
 }
@@ -259,169 +163,129 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-<<<<<<< HEAD
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-    backgroundColor: "#fff",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 40,
-  },
-  button: {
-    backgroundColor: "#333",
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "600",
-  },
-});
-=======
-    backgroundColor: '#f5f5f5',
+    padding: 16,
+    backgroundColor: '#fff',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fff',
   },
   loadingText: {
-    marginTop: 15,
+    marginTop: 12,
     fontSize: 16,
-    color: '#666',
+    color: '#555',
   },
   header: {
-    backgroundColor: '#f7931a',
-    padding: 20,
-    paddingTop: 60,
-    paddingBottom: 25,
+    marginBottom: 16,
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#333',
   },
   headerSubtitle: {
     fontSize: 16,
-    color: 'rgba(255,255,255,0.9)',
-    marginTop: 5,
+    color: '#666',
+    marginTop: 4,
   },
   identityCard: {
-    backgroundColor: 'white',
-    margin: 15,
-    padding: 15,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    padding: 12,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    marginBottom: 16,
   },
   identityLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 8,
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+    color: '#333',
   },
   identityKey: {
-    fontSize: 12,
+    fontSize: 20,
+    color: '#555',
     fontFamily: 'monospace',
-    color: '#333',
-    backgroundColor: '#f0f0f0',
-    padding: 10,
-    borderRadius: 6,
   },
-  uploadButton: {
+  getStartedButton: {
     backgroundColor: '#f7931a',
-    margin: 15,
-    marginTop: 0,
-    padding: 18,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 8,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    marginBottom: 16,
   },
-  uploadButtonDisabled: {
-    backgroundColor: '#ccc',
-  },
-  uploadButtonText: {
-    color: 'white',
-    fontSize: 18,
+  getStartedButtonText: {
+    color: '#fff',
+    fontSize: 16,
     fontWeight: 'bold',
-  },
-  uploadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    marginTop: 50,
   },
   emptyText: {
-    fontSize: 24,
+    fontSize: 20,
     color: '#999',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 16,
     color: '#bbb',
-    textAlign: 'center',
-  },
-  listContainer: {
-    padding: 15,
-    paddingTop: 0,
   },
   mediaItem: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 12,
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    marginBottom: 8,
+    borderRadius: 8,
+    backgroundColor: '#fafafa',
   },
   mediaInfo: {
     flex: 1,
+    marginRight: 12,
   },
   mediaFileName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: '#333',
-    marginBottom: 6,
   },
   mediaDate: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#666',
-    marginBottom: 4,
+    marginTop: 2,
   },
   mediaHash: {
-    fontSize: 11,
-    fontFamily: 'monospace',
+    fontSize: 12,
     color: '#999',
+    marginTop: 2,
+    fontFamily: 'monospace',
+  },
+  uhrpUrl: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2,
+    fontFamily: 'monospace',
+  },
+  timestamp: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2,
+    fontFamily: 'monospace',
   },
   deleteButton: {
-    padding: 10,
-    marginLeft: 10,
+    padding: 8,
+    backgroundColor: '#ff4d4d',
+    borderRadius: 6,
   },
   deleteButtonText: {
-    fontSize: 24,
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
->>>>>>> a26891f (bsv authentication)
