@@ -21,6 +21,7 @@ import * as FileSystem from "expo-file-system";
 import * as WebBrowser from "expo-web-browser";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ViewShot, { captureRef } from "react-native-view-shot";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 
 type GalleryItem = {
   id: string;
@@ -259,7 +260,6 @@ export default function CameraScreen() {
         ctx.fillStyle = '#22c55e';
         ctx.font = 'bold 20px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('固定水印', wmX + wmWidth/2, wmY + 28);
         
         ctx.fillStyle = '#90ee90';
         ctx.font = '14px Arial';
@@ -271,7 +271,7 @@ export default function CameraScreen() {
           const url = URL.createObjectURL(blob);
           const link = document.createElement("a");
           link.href = url;
-          link.download = `固定水印_${timestamp}.jpg`;
+          link.download = `image_${timestamp}.jpg`;
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
@@ -284,7 +284,7 @@ export default function CameraScreen() {
             const item: GalleryItem = {
               id: itemId,
               uri: base64,
-              name: `固定水印_${timestamp}.jpg`,
+              name: `${timestamp}.jpg`,
               timestamp,
               fixedWatermarkX: Math.round(wmX),
               fixedWatermarkY: Math.round(wmY)
@@ -299,7 +299,7 @@ export default function CameraScreen() {
             setWatermarkedUri(base64);
             setCurrentImageId(itemId);
             setIsSavingToDevice(false);
-            Alert.alert("✅ SAVED!", "📥 Image downloaded with watermark!\n💾 Ready for UHRP upload");
+            Alert.alert("✅ SAVED!", "Image downloaded , Ready for UHRP upload");
           };
           reader.readAsDataURL(blob);
         }, 'image/jpeg', 0.9);
@@ -339,7 +339,7 @@ export default function CameraScreen() {
       setWatermarkedUri(finalUri);
       setCurrentImageId(itemId);
 
-      Alert.alert("✅ SAVED!", `📱 ${filename} added to gallery`);
+      Alert.alert("SAVED!", `${filename} added to gallery`);
     } catch (error: any) {
       console.error("❌ Save failed:", error);
       Alert.alert("❌ Save Failed", error.message || "Unknown error");
@@ -350,7 +350,7 @@ export default function CameraScreen() {
 
   const handleOpenUhrp = async () => {
     if (!watermarkedUri || !currentImageId) {
-      Alert.alert("Save First", "Tap 'Save w/ Watermark' first!");
+      Alert.alert("Save to device");
       return;
     }
     await WebBrowser.openBrowserAsync("https://uhrp-ui.bapp.dev/");
@@ -699,11 +699,9 @@ export default function CameraScreen() {
         <View style={styles.header}>
           <TouchableOpacity onPress={() => setMode("camera")}>
             <Text style={styles.text}>Back</Text>
+            <IconSymbol size={26} name="arrow.backward.circle" color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.title}>Preview Watermark</Text>
-          <Text style={styles.statusPending}>
-            👇 Save to continue
-          </Text>
+          <Text style={styles.title}>Preview</Text>
         </View>
 
         <ViewShot ref={fixedPreviewRef} style={{ flex: 1 }}>
@@ -719,8 +717,7 @@ export default function CameraScreen() {
                   }
                 ]}
               >
-                <Text style={styles.fixedWatermarkText}>固定水印</Text>
-                <Text style={styles.fixedWatermarkSub}>Fixed Mark</Text>
+                <Text style={styles.fixedWatermarkSub}>Watermark</Text>
               </View>
             )}
           </View>
@@ -733,6 +730,7 @@ export default function CameraScreen() {
             disabled={isSavingToDevice}
           >
             <Text style={styles.secondaryText}>Retake</Text>
+            <IconSymbol size={20} name="backward" color="#fff" />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -747,8 +745,8 @@ export default function CameraScreen() {
             {isSavingToDevice ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.primaryText}>🟢 Save w/ Watermark</Text>
-            )}
+              <Text style={styles.primaryText}>Save to device</Text>)}
+              <IconSymbol size={20} name="arrow.down" color="#fff" />
           </TouchableOpacity>
         </View>
 
@@ -768,8 +766,9 @@ export default function CameraScreen() {
                 (!watermarkedUri || !currentImageId) && styles.disabledText
               ]}
             >
-              🔴 Open UHRP {(!watermarkedUri || !currentImageId) && "(after save)"}
+              Upload to Decentralized Storage securely {(!watermarkedUri || !currentImageId) && "(after save)"}
             </Text>
+            <IconSymbol size={20} name="arrow.up.and.down.square" color="#fff" />
           </TouchableOpacity>
         </View>
 
@@ -885,7 +884,7 @@ export default function CameraScreen() {
         <Text style={styles.title}>Gallery ({gallery.length})</Text>
         <View style={{ flexDirection: "row", gap: 8 }}>
           <TouchableOpacity style={styles.primaryButton} onPress={() => setMode("camera")}>
-            <Text style={styles.primaryText}>📸 Camera</Text>
+            <Text style={styles.primaryText}>Camera</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[
@@ -894,7 +893,7 @@ export default function CameraScreen() {
             ]}
             onPress={clearAllImages}
           >
-            <Text style={styles.primaryText}>🗑️ Clear</Text>
+            <Text style={styles.primaryText}>Clear</Text>
           </TouchableOpacity>
         </View>
       </View>

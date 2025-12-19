@@ -91,16 +91,14 @@ export default function DashboardScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Media</Text>
+        <Text style={styles.headerTitle}>Securely capture and share media</Text>
         {profile && (
           <Text style={styles.headerSubtitle}>{profile.mediaCount} items</Text>
         )}
       </View>
 
       <View style={styles.identityCard}>
-        <Text style={styles.identityLabel}></Text>
-        <IconSymbol size={32} name="abs.circle.fill" color="#333" />
-        <Text style={styles.identityKey}>
+        <Text style={styles.identityKey}><IconSymbol size={32} name="abs.circle.fill" color="#333" />
           {identityKey.slice(0, 20)}...{identityKey.slice(-12)}
         </Text>
       </View>
@@ -166,75 +164,90 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#fff',
   },
+
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
   },
+
   loadingText: {
     marginTop: 12,
     fontSize: 16,
     color: '#555',
   },
+
   header: {
     marginBottom: 16,
     alignItems: 'center',
   },
+
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
+    textAlign: 'center',
   },
+
   headerSubtitle: {
     fontSize: 16,
     color: '#666',
     marginTop: 4,
   },
+
+  /* ✅ FIXED: Identity Card */
   identityCard: {
-    padding: 12,
-    backgroundColor: '#f0f0f0',
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    backgroundColor: '#eb6060ff',
     borderRadius: 8,
     marginBottom: 16,
+    alignSelf: 'center',        // ✅ PREVENT STRETCH
   },
-  identityLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
-    color: '#333',
-  },
+
   identityKey: {
-    fontSize: 20,
-    color: '#555',
+    fontSize: 16,
+    color: '#fff',
     fontFamily: 'monospace',
+    textAlign: 'center',
   },
+
+  /* ✅ FIXED: Get Started Button */
   getStartedButton: {
     backgroundColor: '#f7931a',
-    padding: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 28,      // ✅ CONTENT-BASED WIDTH
     borderRadius: 8,
     alignItems: 'center',
     marginBottom: 16,
+    alignSelf: 'center',        // ✅ PREVENT STRETCH
   },
+
   getStartedButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
   },
+
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 50,
   },
+
   emptyText: {
     fontSize: 20,
     color: '#999',
     marginBottom: 8,
   },
+
   emptySubtext: {
     fontSize: 16,
     color: '#bbb',
   },
+
   mediaItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -246,43 +259,51 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#fafafa',
   },
+
   mediaInfo: {
     flex: 1,
     marginRight: 12,
   },
+
   mediaFileName: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
   },
+
   mediaDate: {
     fontSize: 14,
     color: '#666',
     marginTop: 2,
   },
+
   mediaHash: {
     fontSize: 12,
     color: '#999',
     marginTop: 2,
     fontFamily: 'monospace',
   },
+
   uhrpUrl: {
     fontSize: 12,
     color: '#999',
     marginTop: 2,
     fontFamily: 'monospace',
   },
+
   timestamp: {
     fontSize: 12,
     color: '#999',
     marginTop: 2,
     fontFamily: 'monospace',
   },
+
   deleteButton: {
     padding: 8,
     backgroundColor: '#ff4d4d',
     borderRadius: 6,
   },
+
   deleteButtonText: {
     color: '#fff',
     fontWeight: 'bold',

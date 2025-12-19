@@ -19,6 +19,11 @@ const MAPPING = {
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
   'camera.fill': 'camera-alt', 
+  'arrow.backward.circle': 'arrow-circle-left',
+  'backward': 'undo',
+  'arrow.down': 'arrow-downward',
+  'arrow.up.and.down.square': 'upload',
+  'abs.circle.fill': 'account-circle',
 
 } as IconMapping;
 
