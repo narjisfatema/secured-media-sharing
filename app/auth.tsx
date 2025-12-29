@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
-  Modal, 
-  TextInput, 
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Modal,
+  TextInput,
   Alert,
-  ActivityIndicator 
+  ActivityIndicator
 } from 'react-native';
 import { WalletClient } from '@bsv/sdk';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
+import { verifyMobileKey as verifyMobileKeyAPI } from '@/hooks/authRequest';
 
 export default function AuthScreen() {
   const [identityKey, setIdentityKey] = useState('');
@@ -29,10 +30,10 @@ export default function AuthScreen() {
 
     try {
       console.log('🔄 Starting wallet connection...');
-      
+     
       // Initialize wallet client
       const walletClient = new WalletClient();
-      
+     
       // Get identity key from BSV Desktop Wallet
       console.log('📞 Requesting identity key from wallet...');
       const key = await walletClient.getPublicKey({ identityKey: true });
@@ -56,22 +57,22 @@ export default function AuthScreen() {
       }
 
       const registerData = await registerResponse.json();
-      
+     
       if (!registerData.success) {
         throw new Error('Registration failed: ' + (registerData.error || 'Unknown error'));
       }
 
       console.log('✅ Registered:', registerData.user);
       console.log('✅ Authentication successful! Proceeding to dashboard...');
-      
+     
       // Skip the auth test - go directly to success
       // The BRC-103 auth will work when uploading photos
       setSuccessModal(true);
-      
+     
     } catch (error) {
       console.error('❌ Connect wallet error:', error);
       Alert.alert(
-        'Connection Error', 
+        'Connection Error',
         error?.message || String(error)
       );
     }
@@ -79,7 +80,7 @@ export default function AuthScreen() {
     setConnecting(false);
   };
 
-  // 🔥 2. MOBILE KEY PASTE
+  // 🔥 2. MOBILE KEY PASTE (UPDATED WITH DATABASE VERIFICATION)
   const verifyMobileKey = async () => {
     if (!pastedKey.trim()) {
       return Alert.alert('Error', 'Please enter an identity key');
@@ -87,38 +88,60 @@ export default function AuthScreen() {
 
     // Validate format
     if (!/^(02|03)[0-9a-fA-F]{64}$/.test(pastedKey.trim())) {
-      return Alert.alert('Error', 'Invalid identity key format. Should be 66 hex characters starting with 02 or 03.');
+      return Alert.alert(
+        'Invalid Format', 
+        'Identity key should be 66 hex characters starting with 02 or 03.\n\nExample: 02a1b2c3d4e5f6...'
+      );
     }
 
     setConnecting(true);
 
     try {
-      // Register the pasted key
-      const response = await fetch(`${SERVER_URL}/auto-register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identityKey: pastedKey.trim() }),
-      });
+      // Verify the key exists in database
+      const result = await verifyMobileKeyAPI(pastedKey.trim());
 
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error || 'Registration failed');
+      if (!result.success) {
+        throw new Error(result.error || 'Verification failed');
       }
 
+      // Save identity key to AsyncStorage
       await AsyncStorage.setItem("identityKey", pastedKey.trim());
       setIdentityKey(pastedKey.trim());
 
-      console.log('✅ Mobile key verified:', data);
+      console.log('✅ Mobile authentication successful:', result.user);
+      console.log(`📱 Media count: ${result.user.mediaCount}`);
+      console.log(`📅 Registered: ${new Date(result.user.registeredAt).toLocaleDateString()}`);
 
+      // Show success modal
       setSuccessModal(true);
       setShowPasteInput(false);
-    } catch (error) {
+      setPastedKey('');
+      
+    } catch (error: any) {
       console.error('❌ Mobile verification error:', error);
-      Alert.alert("Error", error?.message || "Verification failed.");
+      
+      // Check if user needs desktop authentication first
+      if (error.message.includes('not found') || error.message.includes('Desktop Wallet')) {
+        Alert.alert(
+          "Not Registered",
+          "This identity key hasn't been registered yet.\n\n" +
+          "📋 Steps to register:\n" +
+          "1. Open this app on desktop\n" +
+          "2. Connect with BSV Desktop Wallet\n" +
+          "3. Complete registration\n" +
+          "4. Then use this key on mobile\n\n" +
+          "💡 This links your identity across devices.",
+          [{ text: "OK" }]
+        );
+      } else {
+        Alert.alert(
+          "Verification Failed", 
+          error.message || "Could not verify identity key"
+        );
+      }
+    } finally {
+      setConnecting(false);
     }
-
-    setConnecting(false);
   };
 
   // 🔥 3. SUCCESS - GO TO DASHBOARD
@@ -150,7 +173,9 @@ export default function AuthScreen() {
         )}
       </TouchableOpacity>
 
-      <ThemedText>Make sure BSV Desktop is running and connected for seamless integration</ThemedText>
+      <ThemedText style={styles.helperSubtext}>
+        Make sure BSV Desktop is running and connected for seamless integration
+      </ThemedText>
 
       {identityKey !== "" && (
         <Text style={styles.keyPreview}>
@@ -161,7 +186,7 @@ export default function AuthScreen() {
       <ThemedText style={styles.orText}>OR</ThemedText>
       <ThemedText style={styles.mobileText}>Using mobile phone?</ThemedText>
 
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.pasteButton}
         onPress={() => setShowPasteInput(true)}
         disabled={connecting}
@@ -194,7 +219,10 @@ export default function AuthScreen() {
           <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>Enter Identity Key</Text>
             <Text style={styles.helperText}>
-              Paste your 66-character BSV identity key
+              📱 Mobile users: Paste your 66-character identity key
+            </Text>
+            <Text style={[styles.helperText, { fontSize: 12, color: '#999', marginTop: 4, marginBottom: 8 }]}>
+              ⚠️ First-time? Register on desktop with BSV Desktop Wallet first
             </Text>
 
             <TextInput
@@ -202,6 +230,7 @@ export default function AuthScreen() {
               value={pastedKey}
               onChangeText={setPastedKey}
               placeholder="02a1b2c3d4e5f6..."
+              placeholderTextColor="#666"
               multiline
               numberOfLines={3}
               editable={!connecting}
@@ -230,7 +259,7 @@ export default function AuthScreen() {
                 {connecting ? (
                   <ActivityIndicator color="white" size="small" />
                 ) : (
-                  <Text style={styles.modalButtonText}>Verify</Text>
+                  <Text style={styles.modalButtonText}>Verify & Login</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -287,6 +316,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
+  },
+  helperSubtext: {
+    textAlign: 'center',
+    marginTop: 8,
+    fontSize: 13,
+    color: '#888',
+    fontStyle: 'italic',
   },
   keyPreview: {
     marginTop: 15,
@@ -390,13 +426,14 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: '#ddd',
+    borderRadius: 12,
     padding: 15,
-    borderRadius: 10,
-    minHeight: 90,
-    width: '100%',
-    fontSize: 13,
+    color: '#333',
     backgroundColor: '#f9f9f9',
-    marginBottom: 20,
+    fontSize: 13,
+    minHeight: 80,
+    width: '100%',
+    textAlignVertical: 'top',
     fontFamily: 'monospace',
   },
 });

@@ -1,4 +1,4 @@
-// --- Frontend: app/scan-auth.tsx (Conceptual) ---
+// --- Frontend: app/scan-auth.tsx (Conceptual) for Android/iOS---
 
 import { useEffect, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';

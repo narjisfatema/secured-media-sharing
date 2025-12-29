@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  FlatList, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
   Alert,
   ActivityIndicator,
-  RefreshControl
+  RefreshControl,
+  Platform
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
@@ -21,6 +22,7 @@ export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [identityKey, setIdentityKey] = useState('');
   const [profile, setProfile] = useState(null);
+  const [isMobileUser, setIsMobileUser] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -31,25 +33,59 @@ export default function DashboardScreen() {
       const key = await AsyncStorage.getItem("identityKey");
       setIdentityKey(key || '');
       
-      const profileData = await getProfile();
-      setProfile(profileData.user);
-      
-      const result = await getMyMedia();
-      setMedia(result.media);
-      
-      console.log('✅ Loaded dashboard data');
+      // Check if user is on mobile (no BSV Desktop Wallet)
+      const hasWallet = await checkWalletAvailability();
+      setIsMobileUser(!hasWallet);
+
+      if (hasWallet) {
+        // Desktop user - load authenticated data
+        try {
+          const profileData = await getProfile();
+          setProfile(profileData.user);
+         
+          const result = await getMyMedia();
+          setMedia(result.media);
+         
+          console.log('✅ Loaded dashboard data');
+        } catch (authError) {
+          console.log('⚠️ Auth failed, showing mobile view');
+          setIsMobileUser(true);
+        }
+      } else {
+        // Mobile user - show limited view
+        console.log('📱 Mobile user detected - showing camera-only mode');
+      }
+     
     } catch (err) {
       console.error('❌ Load data error:', err);
-      Alert.alert('Error', 'Failed to load data: ' + err.message);
+      // Don't show error alert, just set mobile mode
+      setIsMobileUser(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
+  const checkWalletAvailability = async () => {
+    try {
+      // Try to import WalletClient
+      const { WalletClient } = await import('@bsv/sdk');
+      const walletClient = new WalletClient();
+      
+      // Try to check if wallet is available (this will fail on mobile)
+      await walletClient.isConnected();
+      return true;
+    } catch (error) {
+      // Wallet not available (mobile device)
+      return false;
+    }
+  };
+
   const handleRefresh = () => {
-    setRefreshing(true);
-    loadData();
+    if (!isMobileUser) {
+      setRefreshing(true);
+      loadData();
+    }
   };
 
   const handleGetStarted = () => {
@@ -57,6 +93,11 @@ export default function DashboardScreen() {
   };
 
   const handleDelete = async (mediaId: string, fileName: string) => {
+    if (isMobileUser) {
+      Alert.alert('Not Available', 'Data management requires BSV Desktop Wallet on desktop');
+      return;
+    }
+
     Alert.alert(
       'Delete Media',
       `Delete "${fileName}"?`,
@@ -92,13 +133,17 @@ export default function DashboardScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Securely capture and share media</Text>
-        {profile && (
+        {profile && !isMobileUser && (
           <Text style={styles.headerSubtitle}>{profile.mediaCount} items</Text>
+        )}
+        {isMobileUser && (
+          <Text style={styles.mobileNotice}>📱 Mobile Mode - Camera Only</Text>
         )}
       </View>
 
       <View style={styles.identityCard}>
-        <Text style={styles.identityKey}><IconSymbol size={32} name="abs.circle.fill" color="#333" />
+        <Text style={styles.identityKey}>
+          <IconSymbol size={32} name="abs.circle.fill" color="#333" />
           {identityKey.slice(0, 20)}...{identityKey.slice(-12)}
         </Text>
       </View>
@@ -107,10 +152,26 @@ export default function DashboardScreen() {
         style={styles.getStartedButton}
         onPress={handleGetStarted}
       >
-        <Text style={styles.getStartedButtonText}>📸 Get Started</Text>
+        <Text style={styles.getStartedButtonText}>📸 Go to Camera</Text>
       </TouchableOpacity>
 
-      {media.length === 0 ? (
+      {isMobileUser ? (
+        <View style={styles.mobileInfoContainer}>
+          <Text style={styles.mobileInfoTitle}>📱 Mobile User</Text>
+          <Text style={styles.mobileInfoText}>
+            You're using mobile mode!{'\n\n'}
+            ✅ Available features:{'\n'}
+            • Take photos with camera{'\n'}
+            • Add fixed watermarks{'\n'}
+            • Upload to UHRP{'\n'}
+            • Add UHRP hash watermarks{'\n'}
+            • Save photos locally{'\n'}
+            {'\n'}
+            💡 To manage server data:{'\n'}
+            Use desktop with BSV Desktop Wallet
+          </Text>
+        </View>
+      ) : media.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>📭 No media yet</Text>
           <Text style={styles.emptySubtext}>Take your first photo!</Text>
@@ -196,14 +257,20 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  /* ✅ FIXED: Identity Card */
+  mobileNotice: {
+    fontSize: 14,
+    color: '#f7931a',
+    marginTop: 4,
+    fontWeight: '600',
+  },
+
   identityCard: {
     paddingVertical: 9,
     paddingHorizontal: 16,
     backgroundColor: '#eb6060ff',
     borderRadius: 8,
     marginBottom: 16,
-    alignSelf: 'center',        // ✅ PREVENT STRETCH
+    alignSelf: 'center',
   },
 
   identityKey: {
@@ -213,21 +280,43 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  /* ✅ FIXED: Get Started Button */
   getStartedButton: {
     backgroundColor: '#f7931a',
     paddingVertical: 12,
-    paddingHorizontal: 28,      // ✅ CONTENT-BASED WIDTH
+    paddingHorizontal: 28,
     borderRadius: 8,
     alignItems: 'center',
     marginBottom: 16,
-    alignSelf: 'center',        // ✅ PREVENT STRETCH
+    alignSelf: 'center',
   },
 
   getStartedButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+
+  mobileInfoContainer: {
+    flex: 1,
+    backgroundColor: '#f0f9ff',
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: '#3b82f6',
+    marginTop: 20,
+  },
+
+  mobileInfoTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1e40af',
+    marginBottom: 12,
+  },
+
+  mobileInfoText: {
+    fontSize: 15,
+    color: '#1e3a8a',
+    lineHeight: 24,
   },
 
   emptyContainer: {

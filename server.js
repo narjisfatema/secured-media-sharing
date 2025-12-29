@@ -24,15 +24,15 @@ mongoose.connect(MONGODB_URI)
 // 2. MONGODB USER SCHEMA
 // ======
 const userSchema = new mongoose.Schema({
-  identityKey: { 
-    type: String, 
-    unique: true, 
+  identityKey: {
+    type: String,
+    unique: true,
     required: true,
-    index: true 
+    index: true
   },
-  registeredAt: { 
-    type: Date, 
-    default: Date.now 
+  registeredAt: {
+    type: Date,
+    default: Date.now
   },
   lastActive: {
     type: Date,
@@ -44,9 +44,9 @@ const userSchema = new mongoose.Schema({
     fileUrl: String,
     mimeType: String,
     fileSize: Number,
-    uploadedAt: { 
-      type: Date, 
-      default: Date.now 
+    uploadedAt: {
+      type: Date,
+      default: Date.now
     }
   }]
 });
@@ -99,7 +99,7 @@ app.use((req, res, next) => {
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ 
+  res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
@@ -107,15 +107,15 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Auto-register user
+// Auto-register user (DESKTOP ONLY - with BSV Desktop Wallet)
 app.post('/auto-register', async (req, res) => {
   try {
     const { identityKey } = req.body;
-    
+   
     if (!identityKey) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Identity key is required' 
+      return res.status(400).json({
+        success: false,
+        error: 'Identity key is required'
       });
     }
 
@@ -126,20 +126,20 @@ app.post('/auto-register', async (req, res) => {
         error: 'Invalid identity key format'
       });
     }
-    
+   
     // Find or create user
     let user = await User.findOne({ identityKey });
-    
+   
     if (!user) {
       user = await User.create({ identityKey });
-      console.log(`✅ NEW USER REGISTERED: ${identityKey.slice(0, 16)}...`);
+      console.log(`✅ NEW USER REGISTERED (DESKTOP): ${identityKey.slice(0, 16)}...`);
     } else {
       await user.updateLastActive();
-      console.log(`✅ EXISTING USER: ${identityKey.slice(0, 16)}...`);
+      console.log(`✅ EXISTING USER (DESKTOP): ${identityKey.slice(0, 16)}...`);
     }
-    
-    res.json({ 
-      success: true, 
+   
+    res.json({
+      success: true,
       user: {
         identityKey: user.identityKey,
         registeredAt: user.registeredAt,
@@ -148,26 +148,81 @@ app.post('/auto-register', async (req, res) => {
     });
   } catch (err) {
     console.error('❌ Registration error:', err);
-    res.status(500).json({ 
-      success: false, 
-      error: err.message 
+    res.status(500).json({
+      success: false,
+      error: err.message
     });
   }
 });
 
-// Verify key (for mobile users)
+// Verify mobile key (MOBILE ONLY - paste identity key)
+app.post('/verify-mobile-key', async (req, res) => {
+  try {
+    const { identityKey } = req.body;
+   
+    if (!identityKey) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Identity key is required' 
+      });
+    }
+
+    // Validate identity key format (should be 66 chars hex starting with 02 or 03)
+    if (!/^(02|03)[0-9a-fA-F]{64}$/.test(identityKey)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid identity key format. Should be 66 hex characters starting with 02 or 03.'
+      });
+    }
+   
+    // Check if user exists in database
+    const user = await User.findOne({ identityKey });
+   
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'Identity key not found. Please connect with BSV Desktop Wallet first on desktop.',
+        needsDesktopAuth: true
+      });
+    }
+
+    // Update last active
+    await user.updateLastActive();
+    
+    console.log(`✅ MOBILE LOGIN SUCCESS: ${identityKey.slice(0, 16)}... (${user.media.length} media files)`);
+   
+    res.json({
+      success: true,
+      user: {
+        identityKey: user.identityKey,
+        registeredAt: user.registeredAt,
+        lastActive: user.lastActive,
+        mediaCount: user.media.length
+      },
+      message: 'Mobile authentication successful'
+    });
+  } catch (err) {
+    console.error('❌ Mobile verification error:', err);
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
+// Legacy verify-key endpoint (kept for backward compatibility)
 app.post('/verify-key', async (req, res) => {
   try {
     const { identityKey } = req.body;
-    
+   
     if (!identityKey) {
       return res.status(400).json({ verified: false });
     }
 
     // Check if key exists in database
     const user = await User.findOne({ identityKey });
-    
-    res.json({ 
+   
+    res.json({
       verified: !!user,
       user: user ? {
         identityKey: user.identityKey,
@@ -205,14 +260,14 @@ app.use(async (req, res, next) => {
 app.get('/profile', async (req, res) => {
   try {
     console.log(`📊 Profile request from: ${req.auth.identityKey.slice(0, 16)}...`);
-    
+   
     const user = await User.findOne({ identityKey: req.auth.identityKey });
-    
+   
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
-    res.json({ 
+   
+    res.json({
       user: {
         identityKey: user.identityKey,
         registeredAt: user.registeredAt,
@@ -230,19 +285,19 @@ app.get('/profile', async (req, res) => {
 app.post('/upload-media', async (req, res) => {
   try {
     const { fileHash, fileName, fileUrl, mimeType, fileSize } = req.body;
-    
+   
     if (!fileHash || !fileName) {
-      return res.status(400).json({ 
-        error: 'fileHash and fileName are required' 
+      return res.status(400).json({
+        error: 'fileHash and fileName are required'
       });
     }
-    
+   
     const user = await User.findOne({ identityKey: req.auth.identityKey });
-    
+   
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
+   
     // Add media to user's collection
     user.media.push({
       fileHash,
@@ -252,13 +307,13 @@ app.post('/upload-media', async (req, res) => {
       fileSize: fileSize || 0,
       uploadedAt: new Date()
     });
-    
+   
     await user.save();
-    
+   
     console.log(`📸 MEDIA UPLOADED by ${user.identityKey.slice(0, 16)}...: ${fileName}`);
-    
-    res.json({ 
-      success: true, 
+   
+    res.json({
+      success: true,
       mediaCount: user.media.length,
       media: user.media[user.media.length - 1]
     });
@@ -272,17 +327,17 @@ app.post('/upload-media', async (req, res) => {
 app.get('/my-media', async (req, res) => {
   try {
     const user = await User.findOne({ identityKey: req.auth.identityKey });
-    
+   
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
+   
     // Sort by upload date (newest first)
-    const sortedMedia = user.media.sort((a, b) => 
+    const sortedMedia = user.media.sort((a, b) =>
       new Date(b.uploadedAt) - new Date(a.uploadedAt)
     );
-    
-    res.json({ 
+   
+    res.json({
       media: sortedMedia,
       count: sortedMedia.length
     });
@@ -296,19 +351,19 @@ app.get('/my-media', async (req, res) => {
 app.delete('/media/:mediaId', async (req, res) => {
   try {
     const { mediaId } = req.params;
-    
+   
     const user = await User.findOne({ identityKey: req.auth.identityKey });
-    
+   
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
+   
     // Remove media item
     user.media = user.media.filter(m => m._id.toString() !== mediaId);
     await user.save();
-    
+   
     console.log(`🗑️  MEDIA DELETED by ${user.identityKey.slice(0, 16)}...`);
-    
+   
     res.json({ success: true, mediaCount: user.media.length });
   } catch (err) {
     console.error('❌ Delete error:', err);
@@ -324,7 +379,7 @@ app.get('/stats', async (req, res) => {
       { $project: { mediaCount: { $size: '$media' } } },
       { $group: { _id: null, total: { $sum: '$mediaCount' } } }
     ]);
-    
+   
     res.json({
       totalUsers,
       totalMedia: totalMedia[0]?.total || 0,
@@ -341,29 +396,9 @@ app.get('/stats', async (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`
-╔════════════════════════════════════════════════════════════╗
-║                                                            ║
-║  🚀 BSV BRC-103 Authentication Server                     ║
-║                                                            ║
-║  📍 Server running on: http://localhost:${PORT}              ║
-║  🔐 BRC-103 authentication: ENABLED                        ║
-║  📊 MongoDB: ${mongoose.connection.readyState === 1 ? 'CONNECTED' : 'DISCONNECTED'}                                     ║
-║                                                            ║
-║  📝 Public Endpoints:                                      ║
-║     POST /auto-register                                    ║
-║     POST /verify-key                                       ║
-║     GET  /health                                           ║
-║                                                            ║
-║  🔒 Protected Endpoints (require BRC-103):                 ║
-║     GET    /profile                                        ║
-║     POST   /upload-media                                   ║
-║     GET    /my-media                                       ║
-║     DELETE /media/:mediaId                                 ║
-║     GET    /stats                                          ║
-║                                                            ║
-╚════════════════════════════════════════════════════════════╝
-  `);
+  console.log(`\n🚀 Server running at http://localhost:${PORT}`);
+  console.log(`📱 Mobile users: Use /verify-mobile-key endpoint`);
+  console.log(`💻 Desktop users: Use /auto-register endpoint\n`);
 });
 
 // Handle shutdown gracefully

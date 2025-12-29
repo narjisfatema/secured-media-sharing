@@ -661,6 +661,21 @@ export default function CameraScreen() {
     );
   };
 
+  // 🚨 DEV: FORCE CLEAR ON EVERY LOAD (Remove after testing)
+  useEffect(() => {
+    const forceClear = async () => {
+      try {
+        await AsyncStorage.removeItem(GALLERY_KEY);
+        await AsyncStorage.removeItem(GALLERY_WIPE_FLAG);
+        setGallery([]);
+        console.log("✅ Force cleared gallery on load");
+      } catch (e) {
+        console.error("Force clear failed", e);
+      }
+    };
+    forceClear();
+  }, []);
+
   if (!permission?.granted) {
     return (
       <View style={styles.center}>
@@ -775,7 +790,7 @@ export default function CameraScreen() {
         <Modal visible={askForHash} transparent animationType="fade">
           <View style={styles.modalBackdrop}>
             <View style={styles.modalCard}>
-              <Text style={styles.title}>📤 Paste UHRP Hash</Text>
+              <Text style={styles.title}>Paste UHRP Hash generated from upload</Text>
               <Text style={styles.text}>Upload the saved image to UHRP, then paste the hash here</Text>
               <TextInput
                 style={styles.input}
@@ -800,7 +815,7 @@ export default function CameraScreen() {
                   style={styles.primaryButton}
                   onPress={handleSaveUhrpHash}
                 >
-                  <Text style={styles.primaryText}>💾 Add Hash Watermark</Text>
+                  <Text style={styles.primaryText}>Add the hash to the watermark</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -1034,7 +1049,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#22c55e"
   },
-  fixedWatermarkText: { color: "#22c55e", fontWeight: "800", fontSize: 14 },
   fixedWatermarkSub: { color: "#90ee90", fontSize: 11 },
   hashWatermark: {
     position: "absolute",
