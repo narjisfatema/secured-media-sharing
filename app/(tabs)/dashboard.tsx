@@ -33,32 +33,23 @@ export default function DashboardScreen() {
       const key = await AsyncStorage.getItem("identityKey");
       setIdentityKey(key || '');
       
-      // Check if user is on mobile (no BSV Desktop Wallet)
       const hasWallet = await checkWalletAvailability();
       setIsMobileUser(!hasWallet);
 
       if (hasWallet) {
-        // Desktop user - load authenticated data
         try {
           const profileData = await getProfile();
           setProfile(profileData.user);
-         
           const result = await getMyMedia();
           setMedia(result.media);
-         
           console.log('✅ Loaded dashboard data');
         } catch (authError) {
           console.log('⚠️ Auth failed, showing mobile view');
           setIsMobileUser(true);
         }
-      } else {
-        // Mobile user - show limited view
-        console.log('📱 Mobile user detected - showing camera-only mode');
       }
-     
     } catch (err) {
       console.error('❌ Load data error:', err);
-      // Don't show error alert, just set mobile mode
       setIsMobileUser(true);
     } finally {
       setLoading(false);
@@ -68,15 +59,11 @@ export default function DashboardScreen() {
 
   const checkWalletAvailability = async () => {
     try {
-      // Try to import WalletClient
       const { WalletClient } = await import('@bsv/sdk');
       const walletClient = new WalletClient();
-      
-      // Try to check if wallet is available (this will fail on mobile)
       await walletClient.isConnected();
       return true;
     } catch (error) {
-      // Wallet not available (mobile device)
       return false;
     }
   };
@@ -122,98 +109,152 @@ export default function DashboardScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#f7931a" />
-        <Text style={styles.loadingText}>Loading...</Text>
+        <Text style={styles.loadingText}>Loading your vault...</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
+      {/* Header with gradient */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Securely capture and share media</Text>
-        {profile && !isMobileUser && (
-          <Text style={styles.headerSubtitle}>{profile.mediaCount} items</Text>
-        )}
-        {isMobileUser && (
-          <Text style={styles.mobileNotice}>📱 Mobile Mode - Camera Only</Text>
-        )}
-      </View>
-
-      <View style={styles.identityCard}>
-        <Text style={styles.identityKey}>
-          <IconSymbol size={32} name="abs.circle.fill" color="#333" />
-          {identityKey.slice(0, 20)}...{identityKey.slice(-12)}
-        </Text>
-      </View>
-
-      <TouchableOpacity
-        style={styles.getStartedButton}
-        onPress={handleGetStarted}
-      >
-        <Text style={styles.getStartedButtonText}>📸 Go to Camera</Text>
-      </TouchableOpacity>
-
-      {isMobileUser ? (
-        <View style={styles.mobileInfoContainer}>
-          <Text style={styles.mobileInfoTitle}>📱 Mobile User</Text>
-          <Text style={styles.mobileInfoText}>
-            You're using mobile mode!{'\n\n'}
-            ✅ Available features:{'\n'}
-            • Take photos with camera{'\n'}
-            • Add fixed watermarks{'\n'}
-            • Upload to UHRP{'\n'}
-            • Add UHRP hash watermarks{'\n'}
-            • Save photos locally{'\n'}
-            {'\n'}
-            💡 To manage server data:{'\n'}
-            Use desktop with BSV Desktop Wallet
-          </Text>
-        </View>
-      ) : media.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>📭 No media yet</Text>
-          <Text style={styles.emptySubtext}>Take your first photo!</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={media}
-          keyExtractor={(item) => item._id}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
-          renderItem={({ item }) => (
-            <View style={styles.mediaItem}>
-              <View style={styles.mediaInfo}>
-                <Text style={styles.mediaFileName}>📄 {item.fileName}</Text>
-                <Text style={styles.mediaDate}>
-                  {new Date(item.uploadedAt).toLocaleDateString()} at{' '}
-                  {new Date(item.uploadedAt).toLocaleTimeString()}
-                </Text>
-                <Text style={styles.mediaHash}>
-                  Hash: {item.fileHash.slice(0, 20)}...
-                </Text>
-                {item.uhrpUrl && (
-                  <Text style={styles.uhrpUrl}>
-                    UHRP: {item.uhrpUrl.slice(0, 30)}...
-                  </Text>
-                )}
-                {item.timestamp && (
-                  <Text style={styles.timestamp}>
-                    Watermark: {new Date(item.timestamp).toLocaleString()}
-                  </Text>
-                )}
-              </View>
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={() => handleDelete(item._id, item.fileName)}
-              >
-                <Text style={styles.deleteButtonText}>🗑️</Text>
-              </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <View>
+            <Text style={styles.headerTitle}>Media Vault</Text>
+            <Text style={styles.headerSubtitle}>Blockchain-secured storage</Text>
+          </View>
+          {profile && !isMobileUser && (
+            <View style={styles.mediaCount}>
+              <IconSymbol size={20} name="photo.stack" color="#f7931a" />
+              <Text style={styles.mediaCountText}>{profile.mediaCount}</Text>
             </View>
           )}
-        />
+        </View>
+      </View>
+
+      {/* Identity card */}
+      <View style={styles.identitySection}>
+        <View style={styles.identityCard}>
+          <View style={styles.identityIcon}>
+            <IconSymbol size={24} name="person.badge.key.fill" color="#fff" />
+          </View>
+          <View style={styles.identityInfo}>
+            <Text style={styles.identityLabel}>Your Identity</Text>
+            <Text style={styles.identityKey}>
+              {identityKey.slice(0, 16)}...{identityKey.slice(-10)}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* CTA Button */}
+      <TouchableOpacity
+        style={styles.ctaButton}
+        onPress={handleGetStarted}
+        activeOpacity={0.8}
+      >
+        <View style={styles.ctaContent}>
+          <View style={styles.ctaIcon}>
+            <IconSymbol size={28} name="camera.fill" color="#fff" />
+          </View>
+          <View style={styles.ctaText}>
+            <Text style={styles.ctaTitle}>Capture New Media</Text>
+            <Text style={styles.ctaSubtitle}>Take photos with blockchain verification</Text>
+          </View>
+          <IconSymbol size={24} name="chevron.right" color="rgba(255,255,255,0.6)" />
+        </View>
+      </TouchableOpacity>
+
+      {/* Media list */}
+      {media.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <View style={styles.emptyIcon}>
+            <IconSymbol size={64} name="photo.on.rectangle.angled" color="#444" />
+          </View>
+          <Text style={styles.emptyTitle}>No Media Yet</Text>
+          <Text style={styles.emptyText}>
+            Start capturing secure, blockchain-verified photos
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.mediaSection}>
+          <View style={styles.mediaSectionHeader}>
+            <Text style={styles.mediaSectionTitle}>Recent Media</Text>
+            <Text style={styles.mediaSectionCount}>{media.length} items</Text>
+          </View>
+          
+          <FlatList
+            data={media}
+            keyExtractor={(item) => item._id}
+            refreshControl={
+              <RefreshControl 
+                refreshing={refreshing} 
+                onRefresh={handleRefresh}
+                tintColor="#f7931a"
+              />
+            }
+            contentContainerStyle={styles.mediaList}
+            renderItem={({ item }) => (
+              <View style={styles.mediaCard}>
+                <View style={styles.mediaCardHeader}>
+                  <View style={styles.mediaIconContainer}>
+                    <IconSymbol size={20} name="doc.fill" color="#f7931a" />
+                  </View>
+                  <View style={styles.mediaCardInfo}>
+                    <Text style={styles.mediaFileName}>{item.fileName}</Text>
+                    <Text style={styles.mediaDate}>
+                      {new Date(item.uploadedAt).toLocaleDateString()} · {new Date(item.uploadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => handleDelete(item._id, item.fileName)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <IconSymbol size={20} name="trash.fill" color="#ef4444" />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.mediaDetails}>
+                  <View style={styles.detailRow}>
+                    <IconSymbol size={14} name="number" color="#666" />
+                    <Text style={styles.detailLabel}>Hash:</Text>
+                    <Text style={styles.detailValue}>
+                      {item.fileHash.slice(0, 16)}...
+                    </Text>
+                  </View>
+
+                  {item.uhrpUrl && (
+                    <View style={styles.detailRow}>
+                      <IconSymbol size={14} name="link" color="#666" />
+                      <Text style={styles.detailLabel}>UHRP:</Text>
+                      <Text style={styles.detailValue}>
+                        {item.uhrpUrl.slice(0, 24)}...
+                      </Text>
+                    </View>
+                  )}
+
+                  {item.timestamp && (
+                    <View style={styles.detailRow}>
+                      <IconSymbol size={14} name="clock.fill" color="#666" />
+                      <Text style={styles.detailLabel}>Mark:</Text>
+                      <Text style={styles.detailValue}>
+                        {new Date(item.timestamp).toLocaleString([], { 
+                          month: 'short', 
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            )}
+          />
+        </View>
       )}
     </View>
   );
@@ -222,180 +263,251 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#0a0a0a',
   },
-
-  centerContainer: {
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#0a0a0a',
   },
-
   loadingText: {
-    marginTop: 12,
+    marginTop: 16,
     fontSize: 16,
-    color: '#555',
+    color: '#888',
+    fontWeight: '500',
   },
-
   header: {
-    marginBottom: 16,
+    backgroundColor: '#1a1a1a',
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2a2a2a',
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
-
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#fff',
+    letterSpacing: -0.5,
   },
-
   headerSubtitle: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 14,
+    color: '#888',
     marginTop: 4,
   },
-
-  mobileNotice: {
-    fontSize: 14,
+  mediaCount: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(247, 147, 26, 0.1)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(247, 147, 26, 0.2)',
+  },
+  mediaCountText: {
     color: '#f7931a',
-    marginTop: 4,
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  identitySection: {
+    padding: 20,
+  },
+  identityCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1a1a1a',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+  },
+  identityIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#f7931a',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  identityInfo: {
+    flex: 1,
+  },
+  identityLabel: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
     fontWeight: '600',
   },
-
-  identityCard: {
-    paddingVertical: 9,
-    paddingHorizontal: 16,
-    backgroundColor: '#eb6060ff',
-    borderRadius: 8,
-    marginBottom: 16,
-    alignSelf: 'center',
-  },
-
   identityKey: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#fff',
     fontFamily: 'monospace',
-    textAlign: 'center',
+    letterSpacing: 0.5,
   },
-
-  getStartedButton: {
+  ctaButton: {
+    marginHorizontal: 20,
+    marginBottom: 24,
     backgroundColor: '#f7931a',
-    paddingVertical: 12,
-    paddingHorizontal: 28,
-    borderRadius: 8,
+    borderRadius: 20,
+    overflow: 'hidden',
+    ...Platform.select({
+  ios: {
+    shadowColor: '#f7931a',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+  },
+  android: {
+    elevation: 8,
+  },
+  web: {
+    boxShadow: '0 8px 12px rgba(247, 147, 26, 0.3)',
+  },
+}),
+  },
+  ctaContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+  },
+  ctaIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  ctaText: {
+    flex: 1,
+  },
+  ctaTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  ctaSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  mediaSection: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  mediaSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
-    alignSelf: 'center',
   },
-
-  getStartedButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-
-  mobileInfoContainer: {
-    flex: 1,
-    backgroundColor: '#f0f9ff',
-    borderRadius: 12,
-    padding: 20,
-    borderWidth: 2,
-    borderColor: '#3b82f6',
-    marginTop: 20,
-  },
-
-  mobileInfoTitle: {
+  mediaSectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1e40af',
+    fontWeight: '700',
+    color: '#fff',
+  },
+  mediaSectionCount: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '600',
+  },
+  mediaList: {
+    paddingBottom: 20,
+  },
+  mediaCard: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+  },
+  mediaCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 12,
   },
-
-  mobileInfoText: {
-    fontSize: 15,
-    color: '#1e3a8a',
-    lineHeight: 24,
+  mediaIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(247, 147, 26, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
-
+  mediaCardInfo: {
+    flex: 1,
+  },
+  mediaFileName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  mediaDate: {
+    fontSize: 13,
+    color: '#666',
+  },
+  deleteButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mediaDetails: {
+    gap: 8,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  detailLabel: {
+    fontSize: 13,
+    color: '#888',
+    fontWeight: '500',
+  },
+  detailValue: {
+    fontSize: 13,
+    color: '#aaa',
+    fontFamily: 'monospace',
+    flex: 1,
+  },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 50,
+    paddingHorizontal: 40,
   },
-
-  emptyText: {
-    fontSize: 20,
-    color: '#999',
-    marginBottom: 8,
+  emptyIcon: {
+    marginBottom: 24,
+    opacity: 0.3,
   },
-
-  emptySubtext: {
-    fontSize: 16,
-    color: '#bbb',
-  },
-
-  mediaItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    marginBottom: 8,
-    borderRadius: 8,
-    backgroundColor: '#fafafa',
-  },
-
-  mediaInfo: {
-    flex: 1,
-    marginRight: 12,
-  },
-
-  mediaFileName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-
-  mediaDate: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 2,
-  },
-
-  mediaHash: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 2,
-    fontFamily: 'monospace',
-  },
-
-  uhrpUrl: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 2,
-    fontFamily: 'monospace',
-  },
-
-  timestamp: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 2,
-    fontFamily: 'monospace',
-  },
-
-  deleteButton: {
-    padding: 8,
-    backgroundColor: '#ff4d4d',
-    borderRadius: 6,
-  },
-
-  deleteButtonText: {
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: '700',
     color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
+    marginBottom: 12,
+  },
+  emptyText: {
+    fontSize: 15,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });

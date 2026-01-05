@@ -10,7 +10,7 @@ const { Wallet } = require('@bsv/sdk');
 
 // 1. Environment Variables (Set these in a .env file or environment)
 const JWT_SECRET = process.env.JWT_SECRET || 'YOUR_SECURE_DEFAULT_SECRET_123'; 
-const PUBLIC_API_URL = process.env.PUBLIC_API_URL || 'http://localhost:3000'; // Your public API base URL
+const PUBLIC_API_URL = process.env.PUBLIC_API_URL || 'http://192.168.1.43:3000'; // Your public API base URL
 const CHALLENGE_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
 
 // 2. Temporary Challenge Store (Use Redis/DB in production)

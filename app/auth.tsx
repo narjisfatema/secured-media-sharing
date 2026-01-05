@@ -7,13 +7,16 @@ import {
   Modal,
   TextInput,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { WalletClient } from '@bsv/sdk';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { verifyMobileKey as verifyMobileKeyAPI } from '@/hooks/authRequest';
+import { LinearGradient } from 'expo-linear-gradient';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 
 export default function AuthScreen() {
   const [identityKey, setIdentityKey] = useState('');
@@ -24,27 +27,20 @@ export default function AuthScreen() {
 
   const SERVER_URL = "http://localhost:3000";
 
-  // 🔥 1. CONNECT DESKTOP WALLET (WORKING - NO AUTH TEST)
   const connectWallet = async () => {
     setConnecting(true);
 
     try {
       console.log('🔄 Starting wallet connection...');
-     
-      // Initialize wallet client
       const walletClient = new WalletClient();
-     
-      // Get identity key from BSV Desktop Wallet
       console.log('📞 Requesting identity key from wallet...');
       const key = await walletClient.getPublicKey({ identityKey: true });
       const pubKey = key.publicKey;
 
       console.log('✅ Got identity key:', pubKey);
-
       setIdentityKey(pubKey);
       await AsyncStorage.setItem("identityKey", pubKey);
 
-      // Register in MongoDB (public endpoint - no auth required)
       console.log('📝 Registering user...');
       const registerResponse = await fetch(`${SERVER_URL}/auto-register`, {
         method: "POST",
@@ -57,36 +53,26 @@ export default function AuthScreen() {
       }
 
       const registerData = await registerResponse.json();
-     
       if (!registerData.success) {
         throw new Error('Registration failed: ' + (registerData.error || 'Unknown error'));
       }
 
       console.log('✅ Registered:', registerData.user);
       console.log('✅ Authentication successful! Proceeding to dashboard...');
-     
-      // Skip the auth test - go directly to success
-      // The BRC-103 auth will work when uploading photos
       setSuccessModal(true);
-     
     } catch (error) {
       console.error('❌ Connect wallet error:', error);
-      Alert.alert(
-        'Connection Error',
-        error?.message || String(error)
-      );
+      Alert.alert('Connection Error', error?.message || String(error));
     }
 
     setConnecting(false);
   };
 
-  // 🔥 2. MOBILE KEY PASTE (UPDATED WITH DATABASE VERIFICATION)
   const verifyMobileKey = async () => {
     if (!pastedKey.trim()) {
       return Alert.alert('Error', 'Please enter an identity key');
     }
 
-    // Validate format
     if (!/^(02|03)[0-9a-fA-F]{64}$/.test(pastedKey.trim())) {
       return Alert.alert(
         'Invalid Format', 
@@ -97,30 +83,21 @@ export default function AuthScreen() {
     setConnecting(true);
 
     try {
-      // Verify the key exists in database
       const result = await verifyMobileKeyAPI(pastedKey.trim());
-
       if (!result.success) {
         throw new Error(result.error || 'Verification failed');
       }
 
-      // Save identity key to AsyncStorage
       await AsyncStorage.setItem("identityKey", pastedKey.trim());
       setIdentityKey(pastedKey.trim());
 
-      console.log('✅ Mobile authentication successful:', result.user);
-      console.log(`📱 Media count: ${result.user.mediaCount}`);
-      console.log(`📅 Registered: ${new Date(result.user.registeredAt).toLocaleDateString()}`);
-
-      // Show success modal
+      console.log('Mobile authentication successful:', result.user);
       setSuccessModal(true);
       setShowPasteInput(false);
       setPastedKey('');
-      
     } catch (error: any) {
       console.error('❌ Mobile verification error:', error);
       
-      // Check if user needs desktop authentication first
       if (error.message.includes('not found') || error.message.includes('Desktop Wallet')) {
         Alert.alert(
           "Not Registered",
@@ -129,22 +106,17 @@ export default function AuthScreen() {
           "1. Open this app on desktop\n" +
           "2. Connect with BSV Desktop Wallet\n" +
           "3. Complete registration\n" +
-          "4. Then use this key on mobile\n\n" +
-          "💡 This links your identity across devices.",
+          "4. Then use this key on mobile",
           [{ text: "OK" }]
         );
       } else {
-        Alert.alert(
-          "Verification Failed", 
-          error.message || "Could not verify identity key"
-        );
+        Alert.alert("Verification Failed", error.message || "Could not verify identity key");
       }
     } finally {
       setConnecting(false);
     }
   };
 
-  // 🔥 3. SUCCESS - GO TO DASHBOARD
   const handleOK = () => {
     setSuccessModal(false);
     router.replace("/dashboard");
@@ -152,114 +124,166 @@ export default function AuthScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>BSV Authentication</Text>
-        <Text style={styles.subtitle}>Secure login with BRC-103</Text>
+      {/* Animated background gradient effect */}
+      <View style={styles.bgGradient} />
+      
+      <View style={styles.content}>
+        {/* Hero section */}
+        <View style={styles.hero}>
+          <View style={styles.iconContainer}>
+            <IconSymbol size={64} name="lock.shield.fill" color="#f7931a" />
+          </View>
+          <Text style={styles.title}>Secure Media Vault</Text>
+          <Text style={styles.subtitle}>Blockchain-powered authentication with BRC-103</Text>
+        </View>
+
+        {/* Main action card */}
+        <View style={styles.card}>
+          <TouchableOpacity
+            style={[styles.primaryButton, connecting && styles.buttonDisabled]}
+            onPress={connectWallet}
+            disabled={connecting}
+            activeOpacity={0.8}
+          >
+            <View style={styles.buttonContent}>
+              {connecting ? (
+                <>
+                  <ActivityIndicator color="white" size="small" />
+                  <Text style={styles.buttonText}>Connecting Wallet...</Text>
+                </>
+              ) : (
+                <>
+                  <IconSymbol size={24} name="wallet.pass.fill" color="#fff" />
+                  <Text style={styles.buttonText}>Connect BSV Desktop Wallet</Text>
+                </>
+              )}
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.helperContainer}>
+            <IconSymbol size={16} name="info.circle" color="#888" />
+            <Text style={styles.helperText}>
+              Ensure BSV Desktop Wallet is running
+            </Text>
+          </View>
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>OR</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <View style={styles.mobileSection}>
+            <IconSymbol size={28} name="iphone" color="#f7931a" />
+            <Text style={styles.mobileTitle}>Using Mobile?</Text>
+            <Text style={styles.mobileSubtitle}>
+              Paste your identity key to access your vault
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() => setShowPasteInput(true)}
+            disabled={connecting}
+            activeOpacity={0.7}
+          >
+            <IconSymbol size={20} name="doc.on.clipboard" color="#f7931a" />
+            <Text style={styles.secondaryButtonText}>Paste Identity Key</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* DESKTOP WALLET CONNECT */}
-      <TouchableOpacity
-        style={[styles.button, connecting && styles.buttonDisabled]}
-        onPress={connectWallet}
-        disabled={connecting}
-      >
-        {connecting ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator color="white" />
-            <Text style={styles.buttonText}>Connecting...</Text>
-          </View>
-        ) : (
-          <Text style={styles.buttonText}>Connect BSV Desktop Wallet</Text>
-        )}
-      </TouchableOpacity>
-
-      <ThemedText style={styles.helperSubtext}>
-        Make sure BSV Desktop is running and connected for seamless integration
-      </ThemedText>
-
-      {identityKey !== "" && (
-        <Text style={styles.keyPreview}>
-          🔑 Key: {identityKey.slice(0, 16)}...{identityKey.slice(-8)}
-        </Text>
-      )}
-
-      <ThemedText style={styles.orText}>OR</ThemedText>
-      <ThemedText style={styles.mobileText}>Using mobile phone?</ThemedText>
-
-      <TouchableOpacity
-        style={styles.pasteButton}
-        onPress={() => setShowPasteInput(true)}
-        disabled={connecting}
-      >
-        <Text style={styles.pasteButtonText}>📋 Paste Identity Key</Text>
-      </TouchableOpacity>
-
-      {/* SUCCESS MODAL */}
+      {/* Success Modal */}
       <Modal visible={successModal} transparent animationType="fade">
-        <View style={styles.modalBackground}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalEmoji}>✅</Text>
-            <Text style={styles.modalTitle}>Success!</Text>
-            <Text style={styles.modalText}>
-              Authenticated successfully!{'\n\n'}
-              Identity Key:{'\n'}
-              {identityKey.slice(0, 20)}...{identityKey.slice(-12)}
-            </Text>
-
-            <TouchableOpacity style={styles.modalButton} onPress={handleOK}>
-              <Text style={styles.modalButtonText}>Continue to Dashboard</Text>
+        <View style={styles.modalOverlay}>
+          <View style={styles.successModal}>
+            <View style={styles.successIconContainer}>
+              <IconSymbol size={80} name="checkmark.circle.fill" color="#22c55e" />
+            </View>
+            <Text style={styles.successTitle}>Authentication Successful!</Text>
+            <View style={styles.keyDisplay}>
+              <Text style={styles.keyLabel}>Your Identity Key</Text>
+              <Text style={styles.keyText}>
+                {identityKey.slice(0, 20)}...{identityKey.slice(-12)}
+              </Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.continueButton} 
+              onPress={handleOK}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.continueButtonText}>Continue to Dashboard</Text>
+              <IconSymbol size={20} name="arrow.right.circle.fill" color="#fff" />
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      {/* PASTE INPUT MODAL */}
+      {/* Paste Input Modal */}
       <Modal visible={showPasteInput} transparent animationType="slide">
-        <View style={styles.modalBackground}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Enter Identity Key</Text>
-            <Text style={styles.helperText}>
-              📱 Mobile users: Paste your 66-character identity key
-            </Text>
-            <Text style={[styles.helperText, { fontSize: 12, color: '#999', marginTop: 4, marginBottom: 8 }]}>
-              ⚠️ First-time? Register on desktop with BSV Desktop Wallet first
-            </Text>
+        <View style={styles.modalOverlay}>
+          <View style={styles.inputModal}>
+            <View style={styles.modalHeader}>
+              <IconSymbol size={32} name="key.fill" color="#f7931a" />
+              <Text style={styles.inputModalTitle}>Enter Identity Key</Text>
+            </View>
 
-            <TextInput
-              style={styles.input}
-              value={pastedKey}
-              onChangeText={setPastedKey}
-              placeholder="02a1b2c3d4e5f6..."
-              placeholderTextColor="#666"
-              multiline
-              numberOfLines={3}
-              editable={!connecting}
-              textAlignVertical="top"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+            <View style={styles.instructionCard}>
+              <IconSymbol size={20} name="info.circle.fill" color="#3b82f6" />
+              <Text style={styles.instructionText}>
+                Paste your 66-character identity key below
+              </Text>
+            </View>
 
-            <View style={styles.modalButtonRow}>
+            <View style={styles.warningCard}>
+              <IconSymbol size={18} name="exclamationmark.triangle.fill" color="#f59e0b" />
+              <Text style={styles.warningText}>
+                First time? Register on desktop with BSV Desktop Wallet first
+              </Text>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                value={pastedKey}
+                onChangeText={setPastedKey}
+                placeholder="02a1b2c3d4e5f6..."
+                placeholderTextColor="#999"
+                multiline
+                numberOfLines={3}
+                editable={!connecting}
+                textAlignVertical="top"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
+            <View style={styles.modalActions}>
               <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
+                style={styles.cancelButton}
                 onPress={() => {
                   setShowPasteInput(false);
                   setPastedKey('');
                 }}
                 disabled={connecting}
+                activeOpacity={0.7}
               >
-                <Text style={styles.modalButtonText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.modalButton, connecting && styles.buttonDisabled]}
+                style={[styles.verifyButton, connecting && styles.buttonDisabled]}
                 onPress={verifyMobileKey}
                 disabled={connecting}
+                activeOpacity={0.8}
               >
                 {connecting ? (
                   <ActivityIndicator color="white" size="small" />
                 ) : (
-                  <Text style={styles.modalButtonText}>Verify & Login</Text>
+                  <>
+                    <Text style={styles.verifyButtonText}>Verify & Login</Text>
+                    <IconSymbol size={18} name="arrow.right" color="#fff" />
+                  </>
                 )}
               </TouchableOpacity>
             </View>
@@ -273,167 +297,316 @@ export default function AuthScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    padding: 40,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#0a0a0a',
   },
-  header: {
+  bgGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 400,
+    backgroundColor: '#1a1a1a',
+    opacity: 0.5,
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 24,
+  },
+  hero: {
     alignItems: 'center',
     marginBottom: 40,
   },
+  iconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(247, 147, 26, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+    borderWidth: 2,
+    borderColor: 'rgba(247, 147, 26, 0.3)',
+  },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#fff',
     marginBottom: 8,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: '#888',
+    textAlign: 'center',
+    lineHeight: 22,
+    paddingHorizontal: 20,
   },
-  button: {
+  card: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+  },
+  primaryButton: {
     backgroundColor: '#f7931a',
-    padding: 20,
-    borderRadius: 12,
-    marginTop: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    ...Platform.select({
+  ios: {
+    shadowColor: '#f7931a',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+  },
+  android: {
+    elevation: 8,
+  },
+  web: {
+    boxShadow: '0 8px 12px rgba(247, 147, 26, 0.3)',
+  },
+}),
   },
   buttonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: '#3a3a3a',
+    shadowOpacity: 0,
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
   },
   buttonText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: 'bold',
-    fontSize: 16,
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
-  loadingContainer: {
+  helperContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 12,
+  },
+  helperText: {
+    fontSize: 13,
+    color: '#888',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 32,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#2a2a2a',
+  },
+  dividerText: {
+    color: '#666',
+    paddingHorizontal: 16,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  mobileSection: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  mobileTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  mobileSubtitle: {
+    fontSize: 14,
+    color: '#888',
+    textAlign: 'center',
+  },
+  secondaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
+    backgroundColor: 'rgba(247, 147, 26, 0.1)',
+    borderRadius: 16,
+    paddingVertical: 16,
+    borderWidth: 1.5,
+    borderColor: 'rgba(247, 147, 26, 0.3)',
   },
-  helperSubtext: {
-    textAlign: 'center',
-    marginTop: 8,
-    fontSize: 13,
-    color: '#888',
-    fontStyle: 'italic',
-  },
-  keyPreview: {
-    marginTop: 15,
-    textAlign: 'center',
-    color: '#666',
-    fontSize: 14,
-    fontFamily: 'monospace',
-    backgroundColor: '#e8e8e8',
-    padding: 10,
-    borderRadius: 8,
-  },
-  orText: {
-    textAlign: 'center',
-    marginTop: 40,
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#999',
-  },
-  mobileText: {
-    textAlign: 'center',
-    marginTop: 8,
-    color: '#666',
-    fontSize: 14,
-  },
-  pasteButton: {
-    paddingVertical: 15,
-    marginTop: 20,
-  },
-  pasteButtonText: {
-    color: '#007bff',
-    textAlign: 'center',
+  secondaryButtonText: {
+    color: '#f7931a',
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
   },
-  modalBackground: {
+  modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 24,
   },
-  modalBox: {
-    backgroundColor: 'white',
+  successModal: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 32,
+    padding: 32,
     width: '100%',
     maxWidth: 400,
-    padding: 30,
-    borderRadius: 16,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
   },
-  modalEmoji: {
-    fontSize: 48,
-    marginBottom: 15,
+  successIconContainer: {
+    marginBottom: 24,
   },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#333',
-  },
-  modalText: {
-    fontSize: 14,
-    marginBottom: 25,
+  successTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#fff',
+    marginBottom: 24,
     textAlign: 'center',
-    color: '#666',
+  },
+  keyDisplay: {
+    backgroundColor: '#0a0a0a',
+    borderRadius: 16,
+    padding: 20,
+    width: '100%',
+    marginBottom: 28,
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+  },
+  keyLabel: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    fontWeight: '600',
+  },
+  keyText: {
+    fontSize: 14,
+    color: '#f7931a',
+    fontFamily: 'monospace',
     lineHeight: 20,
   },
-  helperText: {
-    fontSize: 13,
-    color: '#999',
-    textAlign: 'center',
-    marginBottom: 15,
-  },
-  modalButton: {
-    backgroundColor: '#f7931a',
-    paddingVertical: 14,
-    paddingHorizontal: 30,
-    borderRadius: 10,
-    minWidth: 120,
-  },
-  cancelButton: {
-    backgroundColor: '#6c757d',
-  },
-  modalButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    textAlign: 'center',
-    fontSize: 15,
-  },
-  modalButtonRow: {
+  continueButton: {
     flexDirection: 'row',
-    gap: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: '#22c55e',
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
     width: '100%',
-    justifyContent: 'space-between',
-    marginTop: 10,
+  },
+  continueButtonText: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  inputModal: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 32,
+    padding: 28,
+    width: '100%',
+    maxWidth: 440,
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+  },
+  modalHeader: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  inputModalTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#fff',
+    marginTop: 12,
+  },
+  instructionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.2)',
+  },
+  instructionText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#93c5fd',
+    lineHeight: 20,
+  },
+  warningCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.2)',
+  },
+  warningText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#fbbf24',
+    lineHeight: 18,
+  },
+  inputContainer: {
+    marginBottom: 24,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 12,
-    padding: 15,
-    color: '#333',
-    backgroundColor: '#f9f9f9',
-    fontSize: 13,
-    minHeight: 80,
-    width: '100%',
+    backgroundColor: '#0a0a0a',
+    borderRadius: 16,
+    padding: 16,
+    color: '#fff',
+    fontSize: 14,
+    minHeight: 100,
     textAlignVertical: 'top',
     fontFamily: 'monospace',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: '#888',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  verifyButton: {
+    flex: 1.5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#f7931a',
+    borderRadius: 16,
+    paddingVertical: 16,
+  },
+  verifyButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
