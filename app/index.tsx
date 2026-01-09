@@ -34,7 +34,7 @@ export default function indexScreen() {
                 </ThemedText>
                 <TouchableOpacity onPress={() => router.push('/auth')}>
                     <ThemedText type="subtitle" style={styles.tagline}>
-                        Blockchain-based secured multimedia sharing, preventing deepfakes
+                        Blockchain-based secured multimedia sharing, content provenance, preventing deepfakes
                     </ThemedText>
                 </TouchableOpacity>
             </ThemedView>
