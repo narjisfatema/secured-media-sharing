@@ -12,10 +12,7 @@ import {
   Platform,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
-// ---------------------------------------------------------
-// FIX 1: USE LEGACY IMPORT TO FIX CRASHES
 import * as FileSystem from "expo-file-system/legacy";
-// ---------------------------------------------------------
 import * as WebBrowser from "expo-web-browser";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { IconSymbol } from "@/components/ui/icon-symbol";

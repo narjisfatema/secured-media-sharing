@@ -13,11 +13,9 @@ import {
 import { WalletClient } from '@bsv/sdk';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-// Ensure these paths match your project structure
-import { ThemedText } from '@/components/themed-text'; 
+import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-
-// Import the configured URL and API function
+// Import our unified URL logic
 import { verifyMobileKey as verifyMobileKeyAPI, API_BASE_URL } from '@/hooks/authRequest';
 
 export default function AuthScreen() {
@@ -27,13 +25,14 @@ export default function AuthScreen() {
   const [pastedKey, setPastedKey] = useState('');
   const [showPasteInput, setShowPasteInput] = useState(false);
 
-  // 1. Desktop Wallet Connection Logic
+  // 1. Desktop / Web Wallet Logic
   const connectWallet = async () => {
     setConnecting(true);
 
     try {
       console.log('🔄 Starting wallet connection...');
       const walletClient = new WalletClient();
+      
       console.log('📞 Requesting identity key from wallet...');
       const key = await walletClient.getPublicKey({ identityKey: true });
       const pubKey = key.publicKey;
@@ -44,7 +43,7 @@ export default function AuthScreen() {
 
       console.log(`📝 Registering user at ${API_BASE_URL}...`);
       
-      // Use the centralized API_BASE_URL
+      // Use our unified URL
       const registerResponse = await fetch(`${API_BASE_URL}/auto-register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -71,13 +70,12 @@ export default function AuthScreen() {
     setConnecting(false);
   };
 
-  // 2. Mobile Manual Key Logic
+  // 2. Mobile Logic
   const verifyMobileKey = async () => {
     if (!pastedKey.trim()) {
       return Alert.alert('Error', 'Please enter an identity key');
     }
 
-    // Validate format
     if (!/^(02|03)[0-9a-fA-F]{64}$/.test(pastedKey.trim())) {
       return Alert.alert(
         'Invalid Format', 
@@ -88,7 +86,6 @@ export default function AuthScreen() {
     setConnecting(true);
 
     try {
-      // Call the API function which uses the correct IP
       const result = await verifyMobileKeyAPI(pastedKey.trim());
       
       if (!result.success) {
@@ -108,7 +105,7 @@ export default function AuthScreen() {
       if (error.message.includes('not found') || error.message.includes('Desktop Wallet')) {
         Alert.alert(
           "Not Registered",
-          "This identity key hasn't been registered yet.\n\nPlease register on Desktop first.",
+          "This key isn't registered yet.\n\nPlease register on Desktop first.",
           [{ text: "OK" }]
         );
       } else {
@@ -129,17 +126,14 @@ export default function AuthScreen() {
       <View style={styles.bgGradient} />
       
       <View style={styles.content}>
-        {/* Header */}
         <View style={styles.hero}>
           <View style={styles.iconContainer}>
             <IconSymbol size={64} name="lock.shield.fill" color="#f7931a" />
           </View>
           <Text style={styles.title}>Secure Media Vault</Text>
-          {/* Display IP to help debug connectivity */}
           <Text style={styles.subtitle}>Server: {API_BASE_URL.replace('http://', '')}</Text>
         </View>
 
-        {/* Main Card */}
         <View style={styles.card}>
           <TouchableOpacity
             style={[styles.primaryButton, connecting && styles.buttonDisabled]}
