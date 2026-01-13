@@ -41,7 +41,6 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use((req, res, next) => {
   // Log where the request is coming from
-  console.log(`${new Date().toISOString()} | ${req.method} ${req.path} | From: ${req.ip}`);
   next();
 });
 
@@ -58,7 +57,7 @@ app.post('/auto-register', async (req, res) => {
       console.log('🆕 Register:', identityKey.slice(0, 10));
     } else {
       await user.updateLastActive();
-      console.log('👋 Login:', identityKey.slice(0, 10));
+      console.log('Login :', `${identityKey.slice(0, 5)}.......${identityKey.slice(-5)}`);
     }
     res.json({ success: true, user: { identityKey: user.identityKey } });
   } catch (err) { res.status(500).json({ success: false, error: err.message }); }
@@ -120,6 +119,5 @@ app.listen(PORT, '0.0.0.0', () => {
       if (net.family === 'IPv4' && !net.internal) localIP = net.address;
     }
   }
-  console.log(`\n Server is Running`);
-  console.log(`   Listening on: http://${localIP}:${PORT}`);
+  console.log(`Server is Running`);
 });

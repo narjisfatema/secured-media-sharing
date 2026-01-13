@@ -28,9 +28,6 @@ const getBaseUrl = () => {
 };
 
 export const API_BASE_URL = getBaseUrl();
-
-console.log(`🔌 API URL Set to: ${API_BASE_URL}`);
-
 /**
  * Make an authenticated BRC-103 request
  */

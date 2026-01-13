@@ -131,7 +131,6 @@ export default function AuthScreen() {
             <IconSymbol size={64} name="lock.shield.fill" color="#f7931a" />
           </View>
           <Text style={styles.title}>Secure Media Vault</Text>
-          <Text style={styles.subtitle}>Server: {API_BASE_URL.replace('http://', '')}</Text>
         </View>
 
         <View style={styles.card}>
@@ -280,7 +279,6 @@ const styles = StyleSheet.create({
   hero: { alignItems: 'center', marginBottom: 40 },
   iconContainer: { width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(247, 147, 26, 0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 24, borderWidth: 2, borderColor: 'rgba(247, 147, 26, 0.3)' },
   title: { fontSize: 32, fontWeight: '800', color: '#fff', marginBottom: 8, letterSpacing: -0.5 },
-  subtitle: { fontSize: 16, color: '#888', textAlign: 'center', lineHeight: 22, paddingHorizontal: 20 },
   card: { backgroundColor: '#1a1a1a', borderRadius: 24, padding: 24, borderWidth: 1, borderColor: '#2a2a2a' },
   primaryButton: { backgroundColor: '#f7931a', borderRadius: 16, paddingVertical: 18, paddingHorizontal: 24, ...Platform.select({ android: { elevation: 8 }, web: { boxShadow: '0 8px 12px rgba(247, 147, 26, 0.3)' } }) },
   buttonDisabled: { backgroundColor: '#3a3a3a' },
